@@ -173,7 +173,7 @@ pip install -r requirements.txt
 
 ## Submission
 
-Whenever you push to `main`, we run `autobadger` on your `main` branch. We then push our results to your repository under `Issues`.
+Whenever you push to `main`, we run `autobadger` on your `main` branch. Note that a "Status: Passed" badge on your commit means the grading *process* started successfully, not that you passed the tests. We then push our results to your repository under `Issues`.
 
 This issue will contain the contents of `autobadger` as well as some other metadata and notes. This will almost always be your project's final grade, though we do manual reviews of your code as well to check against cheating and hardcoding. We take the grade from your _most recent_ submission. Make sure your latest Gitlab issue has a score that you expect _before_ the deadline!
 
@@ -192,6 +192,8 @@ As such, it is _highly recommended_ to start early, push often, and not wait til
 
 > **NOTE**: Be careful not to push after the deadline unless your intention is to submit late (see policy below).
 
+> **NOTE**: Emailing your code to course staff is not a valid form of submission and cannot be used to prove your work was done on time. Pushing to GitLab is part of the project, so you should make sure that is working well before the deadline. If you did all the work but can't push, your grade won't reflect your work. This is your responsibility, so make sure you don't put yourself in this situation.
+
 ### Miscellaneous
 
 * projects have four parts; for notebooks, use big headers to divide your work into the four parts ("# Part 1: ...")
@@ -204,7 +206,10 @@ As such, it is _highly recommended_ to start early, push often, and not wait til
 
 The general rule is that no submissions are accepted more than 3 days
 after the deadline.  Furthermore, each day late suffers a 10% penalty
-(so a 90% submission that is 2 days late gets 70%).
+(so a 90% submission that is 2 days late gets 70%).  There is no grace
+period: even 1 minute late is subject to the late penalty.  If a grace
+period is useful to you, pretend the deadline is at 11:50 PM so that
+you give yourself a 10-minute buffer before midnight.
 
 We understand that illness and other circumstances may make it
 difficult to always submit on time.  However, we also think it is
@@ -234,6 +239,10 @@ in handling these special cases).
 ### Resubmission Policy
 
 Resubmissions generally won't be allowed once projects have been graded, except in unusual situations, or when we made a mistake on our end (like a misleading specification).
+
+### Grade Disputes
+
+If you have a problem with your project grade, your first point of contact should be the TA who graded you (not the instructor or head TA).
 
 ### "Pre-grading" Policy
 
