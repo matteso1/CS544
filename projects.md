@@ -44,6 +44,7 @@ resources.
 At the start of each project, you must submit the [Project
 Form](https://tyler.caraza-harter.com/cs544/s26/forms.html).  This
 will indicate whether or not you have a partner (and if so, who).
+If you are working alone, leave the partner field blank.
 Upon a valid a submission, we'll create a repo for you and your
 partner (if any) on GitLab and email you a link.
 
@@ -175,22 +176,21 @@ pip install -r requirements.txt
 
 Whenever you push to `main`, we run `autobadger` on your `main` branch. Note that a "Status: Passed" badge on your commit means the grading *process* started successfully, not that you passed the tests. We then push our results to your repository under `Issues`.
 
-This issue will contain the contents of `autobadger` as well as some other metadata and notes. This will almost always be your project's final grade, though we do manual reviews of your code as well to check against cheating and hardcoding. We take the grade from your _most recent_ submission. Make sure your latest Gitlab issue has a score that you expect _before_ the deadline!
+This issue will contain the contents of `autobadger` as well as some other metadata and notes. This will usually be your project's final grade, though we do manual reviews of your code as well to check against cheating and hardcoding.  TAs are only allowed to adjust scores down, not up. We take the grade from your _most recent_ submission. Make sure your latest Gitlab issue has a score that you expect _before_ the deadline!
 
 ### IMPORTANT!
 
 **It is important to note that it is *your responsibility* to verify**:
 
-1. You receive a GitLab issue (within a reasonable amount of time, i.e. an hour, but normally much shorter than that)
-2. The results you see align with what you expect.
-
-If there is an issue with (1) or (2), double check your code, give it some time before you push again or [rerun your GitLab pipeline](https://piazza.com/class/merk8zm4in1ib/post/38) manually. If the issue is not resolved after a few attempts, then reach out to your [TA](https://tyler.caraza-harter.com/cs544/s26/messages.html?topic=ta) or visit us in office hours.
-
-> **NOTE**: in cases around/after the deadline, it is better manually rerun the pipeline (if you suspect that your code is fine) than to push to `main` again. We keep track of your latest push to check against the project's deadline.
+1. The testing pipeline started (you see a green check or "Status: Passed" by your commit)
+2. You receive a GitLab issue (within a reasonable amount of time, i.e. an hour, but normally much shorter than that)
+3. The test scores in the issue align with what you expect.
 
 As such, it is _highly recommended_ to start early, push often, and not wait till the minutes before the deadline to submit! Give yourself a buffer against unexpected issues.
 
-> **NOTE**: Be careful not to push after the deadline unless your intention is to submit late (see policy below).
+If there is an issue with (1) or (2), there is likely an issue with GitLab or the testing infrastructure.  Click on the "Status: Passed" badge and retry the pipeline a couple times to see if it is a transient issue. If the problem persists, check Piazza to see if others are experiencing the same issue (creating a post if you're the first, or commenting on an existing post).
+
+If there is an issue with (3), that usually means there is a bug in your code, or that you forgot to push something, or that your code is hardcoded is such a way that it only works on your own VM.
 
 > **NOTE**: Emailing your code to course staff is not a valid form of submission and cannot be used to prove your work was done on time. Pushing to GitLab is part of the project, so you should make sure that is working well before the deadline. If you did all the work but can't push, your grade won't reflect your work. This is your responsibility, so make sure you don't put yourself in this situation.
 
@@ -202,14 +202,19 @@ As such, it is _highly recommended_ to start early, push often, and not wait til
 
 ## Policies
 
+### Submission Time
+
+Your submission time is determined by your most recent push to `main`. Be careful not to push after the deadline unless your intention is to make a late submission.  Breaking your work into many small commits, pushed before the deadline, is strongly encouraged.
+
+Re-running the GitLab pipeline is not considered a new submission. In cases around/after the deadline, it is better to manually rerun the pipeline (if you suspect that your code is fine) than to push to `main` again.
+
+There is no grace period: even 1 minute late is subject to the late penalty. If a grace period is useful to you, pretend the deadline is at 11:50 PM so that you give yourself a 10-minute buffer before midnight.
+
 ### Late/Sick Policy
 
 The general rule is that no submissions are accepted more than 3 days
 after the deadline.  Furthermore, each day late suffers a 10% penalty
-(so a 90% submission that is 2 days late gets 70%).  There is no grace
-period: even 1 minute late is subject to the late penalty.  If a grace
-period is useful to you, pretend the deadline is at 11:50 PM so that
-you give yourself a 10-minute buffer before midnight.
+(so a 90% submission that is 2 days late gets 70%).
 
 We understand that illness and other circumstances may make it
 difficult to always submit on time.  However, we also think it is
