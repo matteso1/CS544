@@ -29,7 +29,7 @@ We will install specific versions of Docker and Docker Compose to make sure ever
 ```bash
 DOCKER_VERSION=5:29.2.0-1~ubuntu.24.04~noble
 COMPOSE_VERSION=5.0.2-1~ubuntu.24.04~noble
-sudo apt install docker-ce=$DOCKER_VERSION docker-ce-cli=$DOCKER_VERSION containerd.io docker-buildx-plugin docker-compose-plugin=$5.0.2-1~ubuntu.24.04~noble
+sudo apt install docker-ce=$DOCKER_VERSION docker-ce-cli=$DOCKER_VERSION containerd.io docker-buildx-plugin docker-compose-plugin=$COMPOSE_VERSION
 ```
 
 Follow the directions to make Docker usable without root: https://docs.docker.com/engine/install/linux-postinstall#manage-docker-as-a-non-root-user.
