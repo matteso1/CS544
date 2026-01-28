@@ -153,6 +153,10 @@ Other requirements:
 
 ## Part 4: Fix the Dockerfile
 
+We already have one Docker image with just Gemma; now we will create a
+second image that builds on the first, adding our scripts and other
+dependencies.
+
 Create a `Dockerfile.analyze` that builds an image combining your
 scripts with the LLM from Part 2.  Start with this bad Dockerfile:
 
@@ -169,12 +173,15 @@ COPY analyze.sh .
 CMD ["bash", "analyze.sh"]
 ```
 
-Try to build and run it like this (note we are again using the `PROJECT` variable which we will change when testing multiple student submissions concurrently):
+Try to build it like this (should fail):
 
 ```
 export PROJECT=p1
 docker build . -f Dockerfile.analyze -t ${PROJECT}-analyze --build-arg PROJECT=$PROJECT
 ```
+
+Note we are again using the `PROJECT` variable which we will change
+when testing multiple student submissions concurrently.
 
 Many people are using AI to produce code faster, but we can also use
 it to produce higher quality code.
@@ -196,7 +203,7 @@ Now, read the biggest issues we (teaching team) saw in the Dockerfile: [part4-bu
 At the top of the chat, click "Share conversation" to get a link, and
 paste it somewhere in your `part4.txt` file.
 
-Also, comment in the file regarding whether Gemini was able to find three issues we described.
+Also, comment in the file regarding whether Gemini was able to find the three issues we described.
 
 Finally, think critically and decide what feedback you want to
 integrate into your Dockerfile.  Do NOT integrate any suggestion you
