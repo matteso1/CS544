@@ -106,9 +106,10 @@ parameters because it is small enough to run reasonably on a CPU.
 
 Read about the model here: https://huggingface.co/mozilla-ai/gemma-3-4b-it-llamafile
 
-Try the quickstart directions on your VM.
+Try the quickstart directions on your VM.  Note that the model is
+about 3 GB, so the download will take a while.
 
-Now, your job is write a Dockerfile named `Dockerfile.llm` that can be built like this:
+Now, your job is to write a Dockerfile named `Dockerfile.llm` that can be built like this:
 
 ```
 export PROJECT=p1
@@ -150,16 +151,6 @@ Other requirements:
 * final output should be wrapped so that it is no more than 80 characters wide (hint: `man fmt`)
 * pipe the Gemma output for the final format processing
 
-The output should look like this:
-
-```
-$> ./analyze.sh
-
-The code was updated to include a usage message that explains how to run
-the script and lists the supported operations.
-
-```
-
 ## Part 4: Fix the Dockerfile
 
 Create a `Dockerfile.analyze` that builds an image combining your
@@ -178,7 +169,7 @@ COPY analyze.sh .
 CMD ["bash", "analyze.sh"]
 ```
 
-Try to build and run it like this (note we are again using the `PROJECT` variable which we will change when testing multiple student submission concurrently):
+Try to build and run it like this (note we are again using the `PROJECT` variable which we will change when testing multiple student submissions concurrently):
 
 ```
 export PROJECT=p1
@@ -200,10 +191,10 @@ Now let's ask Gemini for suggestions to improve the code.
 * be sure to followup, enquiring about any suggestions you don't understand fully.
 * don't assume suggestions are always correct.  You can ask Gemini to "link to documentation about ????" so you can go read further
 
-Now, read the biggest issues we (teaching team) saw in the Dockerfile: [part4-bugs.md](part4-bugs.md).  If there is any issues Gemini didn't mention, experiment with followup prompts to see if you can get better output.  E.g., you could ask it whether any commands will be problematic given you are not running them interactively (i.e., a human typing them in a terminal).
+Now, read the biggest issues we (teaching team) saw in the Dockerfile: [part4-bugs.md](part4-bugs.md).  If there are any issues Gemini didn't mention, experiment with followup prompts to see if you can get better output.  E.g., you could ask it whether any commands will be problematic given you are not running them interactively (i.e., a human typing them in a terminal).
 
 At the top of the chat, click "Share conversation" to get a link, and
-past it somewhere in your `part4.txt` file.
+paste it somewhere in your `part4.txt` file.
 
 Also, comment in the file regarding whether Gemini was able to find three issues we described.
 
@@ -215,6 +206,13 @@ Once you have finalized your Dockerfile and rebuilt, make sure you can run the c
 
 ```
 docker run ${PROJECT}-analyze
+```
+
+The output should look something like this:
+
+```
+The code was updated to include a usage message that explains how to run
+the script and lists the supported operations.
 ```
 
 ## Submission
