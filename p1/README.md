@@ -1,5 +1,3 @@
-# DRAFT! Don't start yet
-
 # P1 (3% of grade): Dockerized Git Analyzer
 
 ## Overview
