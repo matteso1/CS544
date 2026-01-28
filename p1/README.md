@@ -7,37 +7,86 @@
 In this project, you'll practice using Docker and shell scripts.  You'll build a dockerized tool that clones a git repo, extracts the difference between two branches, then summarizes the difference with the help of a small LLM (large language model).
 
 Learning objectives:
-* follow directions to install Docker
-* write Dockerfiles to define how to build Docker images
 * use redirection and piping techniques to send data between files/processes
-* write a simple bash script
+* write shell scripts
+* deploy applications as Docker containers
+* interact with a small, locally deployed LLM
 
 Before starting, please review the [general project directions](../projects.md).
 
 ## Corrections/Clarifications
 
-* [2025.09.22] Updated `autobadger` to `1.0.4` to allow multiple versions of `docker`.
-* [2025.09.15] Updated `autobadger` to `1.0.3` to allow multi-line `apt-get`.
-* [2025.09.11] Updated `autobadger` to cover more cases for `apt-get` and `git diff` checks. This doesn't affect already submitted solutions.
-* [2025.09.11] Added some clarifications in `p1.md`. This doesn't affect already submitted solutions.
+* none yet
 
 ## AI Usage
 
-For this project, you must use Google Gemini (as provided by the University: https://it.wisc.edu/generative-ai-services-uw-madison/).  You may not use any other AI assistance.
+For this project, you must use Google Gemini (as provided by the University: https://it.wisc.edu/generative-ai-services-uw-madison/) on part 4 to review a poorly written Dockerfile.
 
-Fill in question answers about your interactions with Gemini as you go in [`ai.md`](ai.md).
+For parts 1-3, you are not allowed to use AI to write scripts or Dockerfiles for you, but you may optionally use it to provide feedback on things you have written yourself.  Writing the first version yourself will help you develop your own skill.
 
-## Part 1: Docker Install
+## Part 1: Prompt Generation Script
 
-Carefully follow the directions here to install Docker on your virtual machine: https://docs.docker.com/engine/install/ubuntu/
+Look at this repo:
+https://git.doit.wisc.edu/cdis/cs/courses/cs544/misc/calculator.
+There are a few branches.  Browse through them.
 
-Notes:
-* There are several different approaches described under "Installation methods".  Use the directions under "Install using the apt repository".  Make sure you don't keep going after you reach "Install from a package".
-* The first step under "Install Docker Engine" has two options: "Latest" or "Specific version".  Choose **"Specific version"** (`VERSION_STRING=5:28.4.0-1~ubuntu.24.04~noble`).
+Write a bash script called `gen_prompt.sh` that clones the repo,
+extracts the difference between two branches, and generates a prompt
+file that could be sent to an LLM.
 
-To avoid needing to run every Docker command with root, there are a few more steps you should do here:
-https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user
-(don't go beyond the "Manage Docker as a non-root user" section).
+Your script should:
+1. Clone the calculator repo
+2. Compare the `fix` branch to the `main` branch using `git diff`
+3. Generate a `prompt.txt` file formatted like this:
+
+```
+Read following code diff:
+<git diff output here...>
+Summarize the code changes in 1 sentence, without repeating actual lines of code.
+```
+
+The full prompt should look like this:
+
+```
+Read following code diff:
+diff --git a/calc.py b/calc.py
+index 5a80faf..b14e36d 100644
+--- a/calc.py
++++ b/calc.py
+@@ -2,8 +2,10 @@
+ import sys
+ 
+ def main():
++    USAGE = f"Usage: {sys.argv[0]} <operation> <num1> <num2>\nSupported operations: add, sub, mul, div"
++    
+     if len(sys.argv) != 4:
+-        print(f"Usage: {sys.argv[0]} add <num1> <num2>")
++        print(USAGE)
+         sys.exit(1)
+     
+     operation = sys.argv[1]
+@@ -25,7 +27,7 @@ def main():
+         result = num1 / num2
+     else:
+         print(f"Error: Unknown operation '{operation}'")
+-        print("Supported operations: add, sub, mul, div")
++        print(USAGE)
+         sys.exit(1)
+     
+     # Print integer if result is whole number, otherwise float
+Summarize the code changes in 1 sentence, without repeating actual lines of code.
+```
+
+**Requirements:** Your `gen_prompt.sh` script must:
+* Start with a shebang line (e.g., `#!/bin/bash`)
+* Use `>` (overwrite redirect) for creating/overwriting the file
+* Use `>>` (append redirect) for adding content to the file
+
+## Part 2: Gemma Docker Image
+
+### Docker Install
+
+Carefully follow the directions here to install Docker on your virtual machine: https://git.doit.wisc.edu/cdis/cs/courses/cs544/s26/main/-/blob/main/docker.md?ref_type=heads
 
 Create some files to verify your Docker installation:
 
@@ -46,83 +95,126 @@ docker version > docker.txt
 docker compose version > compose.txt
 ```
 
-## Part 2: Docker Image: ollama base
+### llamafile
 
-Write a Dockerfile named "Dockerfile.ollama" that can be built like this:
+[llamafile](https://hacks.mozilla.org/2023/11/introducing-llamafile/)
+is a Mozilla project that packages large language model weights into
+standalone executables.
+
+Normally, models run on GPUs.  We will use Gemma 3 with 4 billion
+parameters because it is small enough to run reasonably on a CPU.
+
+Read about the model here: https://huggingface.co/mozilla-ai/gemma-3-4b-it-llamafile
+
+Try the quickstart directions on your VM.
+
+Now, your job is write a Dockerfile named `Dockerfile.llm` that can be built like this:
 
 ```
-docker build -f Dockerfile.ollama -t p1-ollama .
+export PROJECT=p1
+docker build . -f Dockerfile.llm -t ${PROJECT}-llm
 ```
 
-It should start from the latest LTS version of Ubuntu.  Inside the
-image, you should have ollama installed, with the "gemma3:1b" model
-already pulled.
+The `-f` flag tells Docker to use a Dockerfile that is not simply
+named "Dockerfile".  We are using an environment variable for the
+image name because we will test code from multiple students
+concurrently, and we cannot build images for multiple students at the
+same time with the same name (so, during testing, we will use
+something other than "p1").
 
-> Ollama is a lightweight library for running and interacting with local language models.  
+Your Dockerfile should install Gemma and make it the default start command for new containers.
 
-Ask Gemini to explain how to install, run, and prompt ollama.  Also
-prompt it to generate the Dockerfile for you.  
-> Like all LLMs, it's not a given that Gemini be correct--you might have to re-prompt it, do some back-and-forth and/or manual verification.
+After building the image, you should be able to run Gemma like this:
 
-Answer some questions
-about this in `ai.md`.  Brainstorm with Gemini about how to manually
-verify the Dockerfile does what you want before proceeding to part 3.
+```
+docker run -it ${PROJECT}-llm
+```
 
 ## Part 3: Analyzer Script
 
-Look at this repo:
-https://git.doit.wisc.edu/cdis/cs/courses/cs544/misc/calculator.
-There are a few branches.  Browse through them.
+Write an `analyze.sh` bash script that:
+1. Runs `gen_prompt.sh` to generate `prompt.txt`
+2. Feeds the prompt to the LLM to get a summary
 
-Write an `analyze.sh` bash script that clones the repo, compares the
-`fix` branch to the `main` branch with a git diff, and generates a
-"prompt.txt" file (using both `>` and `>>` redirections).  The file
-should be formatted to look like this:
+Run `./google_gemma-3-4b-it-Q6_K.llamafile --help` to read about
+arguments you can use.  Find the flag that "Uses content of file as
+system prompt" and use that to pass a path to a file generated by gen_prompt.sh.
 
-```
-Summarize the following code diff:
-<git diff output here...>
-```
+Gemma requirements:
+* disable logging
+* prompt should be silent (so not printed out again)
+* set temperature to 0 (otherwise LLMs produce somewhat different output each time)
 
-Use `cat` and a pipe (`|`) to send the prompt to `ollama` to get a
-summary of the code change.  Note that even though gemma3:1b is quite
-small, it will run slowly on your VM because we only have access to
-CPUs (it would be much faster on a GPU).
+Other requirements:
+* stdout/stderr of gen_prompt.sh should not be part of the output of analyze.sh
+* final output should be wrapped so that it is no more than 80 characters wide (hint: `man fmt`)
+* pipe the Gemma output for the final format processing
 
-Gemini might be useful with some of the following:
-* explain the concept of git remotes
-* how to compare remote branches via diff
-* how to wait a while to give a server (ollama) a chance to startup before you try to communicate with it
-* other...
-
-**Requirements:** `analyze.sh` must use each of the following in a sensible way:
- * use both `>` and `>>` (for making prompt.txt)
- * use `&` and `&>` to run `ollama serve` in the background and record its output
- * use `cat` and `|` to send the prompt to `ollama run ...`
-
-## Part 4: Docker Image: analyzer
-
-Create a `Dockerfile.analyzer` Dockerfile with `analyze.sh` and the
-necessary software installed so we can simply run the following to get
-an English description of the difference between the `fix` and `main`
-branches.
+The output should look like this:
 
 ```
-docker build -f Dockerfile.analyzer -t p1-analyzer .
-docker run p1-analyzer
+$> ./analyze.sh
+
+The code was updated to include a usage message that explains how to run
+the script and lists the supported operations.
+
 ```
 
-Your `Dockerfile.analyzer` should start from the image you created in
-Part 2 (`p1-ollama:latest`) so you don’t have to reinstall Ollama or
-re-pull the model.
+## Part 4: Fix the Dockerfile
 
-Note: during testing, we may want to build your second Docker image on
-bases other than your first image, so your `FROM` line should make use
-of a `${PROJECT}` env variable.  You can define the environment
-variable with a default like this, at the top of your Dockerfile:
+Create a `Dockerfile.analyze` that builds an image combining your
+scripts with the LLM from Part 2.  Start with this bad Dockerfile:
 
 ```
 ARG PROJECT=p1
+FROM ${PROJECT}-llm:latest
+
+RUN apt update
+RUN apt install git
+
+COPY gen_prompt.sh .
+COPY analyze.sh .
+
+CMD ["bash", "analyze.sh"]
+```
+
+Try to build and run it like this (note we are again using the `PROJECT` variable which we will change when testing multiple student submission concurrently):
+
+```
+export PROJECT=p1
+docker build . -f Dockerfile.analyze -t ${PROJECT}-analyze --build-arg PROJECT=$PROJECT
+```
+
+Many people are using AI to produce code faster, but we can also use
+it to produce higher quality code.
+
+As you practice this, take notes in a file called `part4.txt`.
+
+In `part4.txt`, first write down a numbered list of any problems you
+see in the Dockerfile, prior to using AI.
+
+Now let's ask Gemini for suggestions to improve the code.
+* visit https://it.wisc.edu/generative-ai-services-uw-madison/ to see the AI tools you have access to as a UW-Madison student
+* click Google Gemini
+* paste the bad Dockerfile, and ask for suggestions to improve
+* be sure to followup, enquiring about any suggestions you don't understand fully.
+* don't assume suggestions are always correct.  You can ask Gemini to "link to documentation about ????" so you can go read further
+
+Now, read the biggest issues we (teaching team) saw in the Dockerfile: [part4-bugs.md](part4-bugs.md).  If there is any issues Gemini didn't mention, experiment with followup prompts to see if you can get better output.  E.g., you could ask it whether any commands will be problematic given you are not running them interactively (i.e., a human typing them in a terminal).
+
+At the top of the chat, click "Share conversation" to get a link, and
+past it somewhere in your `part4.txt` file.
+
+Also, comment in the file regarding whether Gemini was able to find three issues we described.
+
+Finally, think critically and decide what feedback you want to
+integrate into your Dockerfile.  Do NOT integrate any suggestion you
+do not fully understand.
+
+Once you have finalized your Dockerfile and rebuilt, make sure you can run the container to analyze the code changes:
+
+```
+docker run ${PROJECT}-analyze
 ```
 
 ## Submission
@@ -131,16 +223,13 @@ Read the directions [here](../projects.md) about how to create the repo.
 
 Your submission repo should contain the following files:
 * `docker.txt` - Docker version output
-* `compose.txt` - Docker Compose version output  
-* `Dockerfile.ollama` - Base image with ollama and gemma3:1b
-* `Dockerfile.analyzer` - Analyzer image that builds on ollama image
-* `analyze.sh` - Startup script for the analyzer container
-* `ai.md` - Answers about your AI usage
+* `compose.txt` - Docker Compose version output
+* `gen_prompt.sh` - Script that generates prompt.txt from git diff
+* `analyze.sh` - Script that generates prompt and runs the LLM
+* `Dockerfile.llm` - Base image with llamafile and Gemma model
+* `Dockerfile.analyze` - Fixed analyze image that builds on llama image
+* `part4.txt` - File describing code review with Gemini
 
 ## Tester
 
-You can run the grader *locally* with the command (in your project directory):
-```bash
-autobadger --project p1 --verbose
-```
-> Note: this runs the tester locally and is not a submission. You must push your code to your `main` branch. Our grading VM will run the same script against your most current code. Upon completion, it will push a new issue to your GitLab repository. See the `Issues` tab of your repository. It normally takes a few minutes (sometimes longer, depending on the project). See [project](https://git.doit.wisc.edu/cdis/cs/courses/cs544/f25/main/-/blob/main/projects.md?ref_type=heads) for more detail.
+Details coming soon...
