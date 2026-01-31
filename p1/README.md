@@ -14,7 +14,7 @@ Before starting, please review the [general project directions](../projects.md).
 
 ## Corrections/Clarifications
 
-* none yet
+* 2026-1-31 — Updated `autobadger` to `1.1.1` for issue called out on Piazza post #43
 
 ## AI Usage
 
@@ -235,4 +235,4 @@ Your submission repo should contain the following files:
 
 ## Tester
 
-Details coming soon...
+`autobadger --project p1 --verbose`
