@@ -14,7 +14,7 @@ Before starting, please review the [general project directions](../projects.md).
 
 ## Corrections/Clarifications
 
-* none yet
+* Feb 2: added alt option for submitting Gemini chat
 
 ## AI Usage
 
@@ -200,6 +200,8 @@ Now, read the biggest issues we (teaching team) saw in the Dockerfile: [part4-bu
 
 At the top of the chat, click "Share conversation" to get a link, and
 paste it somewhere in your `part4.txt` file.
+
+**Note:** it seems sharing is disabled if you're signed into Gemini with your wisc.edu.  You can do the above with a personal Gemini account.  Or, in Chrome, select all the text of the chat (your prompts and the responses), right click, and select "Print".  Under "More settings" turn on "Background graphics" and Selection only", and save to a PDF, chat.pdf.  Use `scp` to copy this to your VM, and commit it to your repo.
 
 Also, comment in the file regarding whether Gemini was able to find the three issues we described.
 
