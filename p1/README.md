@@ -14,7 +14,8 @@ Before starting, please review the [general project directions](../projects.md).
 
 ## Corrections/Clarifications
 
-* Feb 2: added alt option for submitting Gemini chat
+* 2026-1-31 — Updated `autobadger` to `1.1.1` for issue called out on Piazza post #43
+* 2026-2-02 — Added alt option for submitting Gemini chat
 
 ## AI Usage
 
@@ -237,4 +238,4 @@ Your submission repo should contain the following files:
 
 ## Tester
 
-Details coming soon...
+`autobadger --project p1 --verbose`
