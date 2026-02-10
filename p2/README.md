@@ -87,12 +87,27 @@ Set the PROJECT environment variable:
 export PROJECT=p2
 ```
 
-Build and start the provided services:
+Build and start the provided services.  Because the `docker-compose.yml`
+includes `build:` directives pointing to each Dockerfile, you can build
+all images and start all containers in one command with the `--build` flag:
 
 ```
-docker build . -f Dockerfile.java-dataset -t p2-java-dataset
-docker build . -f Dockerfile.cache -t p2-cache
-docker compose up -d
+docker compose up --build -d
+```
+
+This is equivalent to running `docker build` separately for each
+service, then `docker compose up -d`.  The `--build` flag tells
+Compose to (re)build the images before starting.  You'll want to use
+this whenever you change code — Compose will only rebuild images whose
+files have changed.
+
+When iterating on code, you can rebuild and restart in one step.  The
+`-t 0` flag skips the default 10-second graceful shutdown wait when
+replacing containers, and only containers whose images changed get
+recreated:
+
+```
+docker compose up --build -d -t 0
 ```
 
 Test that things work:
@@ -112,27 +127,27 @@ You should see JSON like:
 
 Multiple requests should alternate `"source"` between `"1"` and `"2"`.
 
-You can also test the Java gRPC backend directly using the provided client:
+You can also test the Java gRPC backend directly using the provided
+client.  First, set up a virtual environment with the gRPC libraries:
 
 ```bash
-# First compile the proto (needed to run client.py locally)
-pip install grpcio grpcio-tools
+python3 -m venv venv
+source venv/bin/activate
+pip install grpcio==1.76.0 grpcio-tools==1.76.0 protobuf==6.33.5
 python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. property.proto
-
-# Then test (use actual container name from docker compose ps)
-python client.py ${PROJECT}-java-dataset-1 5000 081023301063
 ```
 
-**Hint:** think about whether there is any .sh script that will help
-you quickly test code changes.  For example, you may want it to
-rebuild your Dockerfiles, cleanup an old Compose cluster, and deploy a
-new cluster.
+Then test (check the mapped port with `docker compose ps`):
+
+```bash
+python client.py localhost <port> 081023301063
+```
 
 ## Provided Files
 
 Spend some time reading and understanding these before you start coding:
 
-* `property.proto` — gRPC service definition with one RPC (`AddressByParcel`)
+* `property.proto` — gRPC service definition with one RPC (`AddressByParcel`).  Note the `repeated` keyword in the response message — this means the field is a list (zero or more values), similar to a Python list or Java `List`.  In Python generated code, a `repeated string` field behaves like a list of strings.
 * `src/main/java/DatasetServer.java` — Java gRPC server; reads `addresses.csv.gz`, indexes by parcel number, returns sorted addresses
 * `build.gradle` / `settings.gradle` — Gradle build for the Java server
 * `cache.py` — Flask HTTP server with one route (`/address/<parcel>`), round-robin between two dataset servers, no caching or retry

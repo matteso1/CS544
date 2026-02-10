@@ -17,7 +17,7 @@ public class DatasetServer extends PropertyLookupGrpc.PropertyLookupImplBase {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 new GZIPInputStream(new FileInputStream(csvPath))))) {
             String header = reader.readLine();
-            // columns: X,Y,OBJECTID,Parcel,HouseNbr,StreetDir,StreetName,StreetType,Unit,Address,MailCode,ZipCode,...
+
             // We need Parcel (index 3) and Address (index 9)
             String line;
             while ((line = reader.readLine()) != null) {

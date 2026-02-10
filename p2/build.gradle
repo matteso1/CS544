@@ -17,7 +17,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:4.28.2'
+        artifact = 'com.google.protobuf:protoc:3.25.5'
     }
     plugins {
         grpc {
@@ -34,7 +34,7 @@ protobuf {
 sourceSets {
     main {
         proto {
-            srcDir '.'
+            srcDir 'proto'
         }
     }
 }

@@ -25,7 +25,7 @@ def address(parcel):
     source = str(idx + 1)
     try:
         response = stubs[idx].AddressByParcel(property_pb2.ParcelRequest(parcel=parcel))
-        return flask.jsonify({"addrs": list(response.addresses), "source": source, "error": None})
+        return flask.jsonify({"addrs": list(response.addresses), "source": source, "error": None, "test": 456})
     except grpc.RpcError as e:
         return flask.jsonify({"addrs": [], "source": source, "error": str(e)})
 

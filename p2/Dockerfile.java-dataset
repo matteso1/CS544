@@ -3,7 +3,7 @@ FROM gradle:8-jdk17
 WORKDIR /app
 
 COPY build.gradle settings.gradle ./
-COPY property.proto ./
+COPY property.proto proto/
 COPY src ./src
 
 RUN gradle installDist

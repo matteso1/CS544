@@ -3,6 +3,9 @@ name: ${PROJECT}
 services:
   cache:
     image: ${PROJECT}-cache
+    build:
+      context: .
+      dockerfile: Dockerfile.cache
     deploy:
       replicas: 3
     ports:
@@ -11,13 +14,23 @@ services:
       - PROJECT=${PROJECT}
   java-dataset:
     image: ${PROJECT}-java-dataset
+    build:
+      context: .
+      dockerfile: Dockerfile.java-dataset
     deploy:
       replicas: 2
+    ports:
+      - "5000"
     environment:
       - PROJECT=${PROJECT}
   dataset:
     image: ${PROJECT}-dataset
+    build:
+      context: .
+      dockerfile: Dockerfile.dataset
     deploy:
       replicas: 2
+    ports:
+      - "5000"
     environment:
       - PROJECT=${PROJECT}
