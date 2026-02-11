@@ -99,9 +99,9 @@ To run the above outside of a container, you need to create a Python venv and in
 
 ## Architecture
 
-<img src="arch.png" width=600>
+The system has 7 containers managed by Docker Compose, which interact as follows:
 
-The system has 7 containers managed by Docker Compose:
+<img src="arch.png" width=600>
 
 | Service | Replicas | Language | Role |
 |---|---|---|---|
