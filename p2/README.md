@@ -143,6 +143,10 @@ Implement an LRU cache of size 6 in `cache.py` for `parcel_lookup`.  If there is
 
 ## Part 3: Port Java Backend to Python
 
+"Porting" is moving code/software to another platform/system.  You will port the Java implementation of the dataset backend to Python, before making improvements in the next section.  You might know some Java, for this project it is actually great if you do not, as you will use AI to understand the existing code and help with new implementation.
+
+### Aider Setup
+
 To install Aider, use pip to install the Aider installer program
 (perhaps in a virtual env): `pip3 install aider-install`.  Then, run
 the installer itself: `aider-install`.
@@ -161,37 +165,86 @@ After `cd`ing to your the directory where you cloned the repo for your project, 
 aider --model gemini/gemini-2.5-pro
 ```
 
-Read through `src/main/java/DatasetServer.java` carefully.  Your goal
-is to create a `dataset.py` that implements the same gRPC service in
-Python — given a parcel string, it returns the same sorted list of
-addresses.
+You can let Aider update the .gitignore if prompted.
 
-Steps:
-1. Create `dataset.py` implementing the `AddressByParcel` RPC
-   - Read `addresses.csv.gz` at startup, build an in-memory index by parcel
-   - Return addresses sorted alphanumerically (matching the Java behavior)
-   - Serve on port 5000 with a single-threaded gRPC server
-2. Complete `Dockerfile.dataset` so it copies in your `dataset.py` and runs it
-3. Build and test:
-   ```
-   docker build . -f Dockerfile.dataset -t p2-dataset
-   ```
-4. Use `parcel_lookup.py` to verify your Python server returns the same
-   results as the Java server (check mapped ports with `docker compose ps`):
-   ```bash
-   python parcel_lookup.py localhost <java-dataset-port> 081023301063
-   python parcel_lookup.py localhost <dataset-port> 081023301063
-   ```
-   The output should be identical.
-5. Once verified, update `cache.py` to point at the Python `dataset`
-   containers instead of `java-dataset`:
-   - Change `{project}-java-dataset-1:5000` → `{project}-dataset-1:5000`
-   - Change `{project}-java-dataset-2:5000` → `{project}-dataset-2:5000`
-6. Rebuild the cache image and redeploy to confirm everything still works end-to-end
+### Branching
 
-**AI Requirement**: use Aider to help port the Java code.  Use `/ask`
-to ask Aider about different approaches to reading the gzipped CSV in
-Python.  Comment in `ai.md` about what you chose, and why.
+By default, Aider will make git commits as it writes code for you.  But you may not like the code that is written.  Thus, it is best to work with Aider on a new branch.  After some changes, you can review the difference and merge back.
+
+Create a dev branch before working with Aider:
+
+```
+git switch -c dev
+```
+
+After Aider makes some commits, review what changed relative to main:
+
+```
+git diff main..dev
+```
+
+When you're happy with the changes, push your dev changes to your local main.
+
+```
+git push . dev:main
+```
+
+When you want to push to the GitLab main branch from your local main branch (to submit), you can switch to main and push:
+
+```
+git switch main
+git push origin main
+```
+
+Note that "." and "origin" are "remotes" (places where you have some branches).
+
+### Java Implementation
+
+Start Aider, and use it to explore the Java implementation.  We will not edit the Java implementation, so do not `/add` files yet, even if Aider prompts you.
+
+Instead, you can use `/ls` to see what files Aider has shared with the model.  Add the relevant files to the chat, if they are not already there:
+
+```
+/read property-original.proto
+/read src/main/java/DatasetServer.java
+```
+
+Ask Aider to explain the code to you.
+
+**Example prompt:** `What are the functions in dataset.java, and what do they do?`
+
+You can also ask Aider for a code review.
+
+**Example prompt:** `Review the Java dataset implementation.  How can it be improved?`
+
+Note that Aider/Gemini might enthusiastically offer to improve the code, but decline (we're just practing AI-based code review at this point).
+
+One key weakness if of the Java implementation is hardcoding of the column numbers (instead of using column names).  Did Aider identify that?  If not, see if you prompt further to specifically explore corner cases or hardcoding.  With better prompts, you can get better feedback.  You are encouraged to seek such AI feedback on your own code as well.
+
+When porting to Python (next section), you will ask Aider to use column names instead of hardcoding column indexes.  However, unless Aider inspects the data file, it will probably "hallucinate" what columns are there, basically guessing names.  Getting better generated code usually involves giving Aider better context, in this case the header line.  The file is compressed, but Aider can run commands to extract this info, if let it:
+
+**Example prompt:** `run a command to see the first 5 files of addresses.csv.gz`
+
+If prompted, add the command output to the prompt, but do NOT add the file itself (especially since it is compressed).
+
+You can ask Aider questions to make sure it inferred what it was supposed to from the context provided:
+
+**Example prompt:** `List the column names in the file`
+
+### Python Implementation
+
+Getting good code generation from tools like Aider often depends on giving it the right context.  You have already given it two pieces of context: a Java implementation, and the format of the addresses file.
+
+A third piece of context is an example of what you want for the "boilerplate" code (the generic gRPC setup stuff).  For example, you would not want it to generate gRPC code that uses multiple threads (`max_workers>1`) because you have not learned about threads yet.  Ask Aider to read an example gRPC program from lecture: https://git.doit.wisc.edu/cdis/cs/courses/cs544/s26/main/-/blob/main/demos/grpc/lec1/server.py.
+
+Tips:
+* Aider will not do well if it reads an HTML page, like the one we linked to above.  Instead, click the "Open raw" button to get a better URL to pass to Aider
+* Aider may try to install playwright, but that is not necessary
+* If a website is blocking Aider web requests, you could always use `wget` yourself to download the resource, and then ask Aider to read the local file
+
+Now that you have all the relevant context (Java code, CSV format, gRPC boilerplate), write a prompt asking Aider to generate a `dataset.py` file with the same behaviour as the Java program, but that uses column names instead of column indexes.
+
+TODO: should it use pandas?
 
 ## Part 4 (With Aider): New Endpoints End-to-End
 
