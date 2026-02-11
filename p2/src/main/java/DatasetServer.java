@@ -38,10 +38,14 @@ public class DatasetServer extends PropertyLookupGrpc.PropertyLookupImplBase {
     @Override
     public void addressByParcel(ParcelRequest request, StreamObserver<AddressResponse> responseObserver) {
         String parcel = request.getParcel();
-        List<String> addrs = parcelIndex.getOrDefault(parcel, Collections.emptyList());
-        AddressResponse response = AddressResponse.newBuilder()
-                .addAllAddresses(addrs)
-                .build();
+        List<String> addrs = parcelIndex.getOrDefault(parcel, null);
+        AddressResponse.Builder builder = AddressResponse.newBuilder();
+        if (addrs == null) {
+            builder.setFailed(true);
+        } else {
+            builder.addAllAddresses(addrs);
+        }
+        AddressResponse response = builder.build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }

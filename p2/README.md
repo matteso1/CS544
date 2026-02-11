@@ -34,15 +34,13 @@ parts of this project, but there are restrictions on code generation.
 Specifically, you may only use AI to generate code in parts 3 and 4,
 and you may only use a specific tool: Aider, configured to use Gemini 2.5 pro.
 
-### Requirements
-
 Do NOT:
-- Use models other than gemini-2.5-pro
+- Use models other than gemini-2.5-pro for code generation
 - Copy/paste some or all of the text of the project spec (we may run similarity detection between your prompts and our spec)
 - Submit code you don't understand (either prompt Aider to use other approaches you are familiar with, or read on your own to understand Aider-generated code)
-- Don't do one big commit (or just a few): there incremental progress across many commits
+- Don't do one big commit (or just a few): there should be incremental progress across many commits
 
-DOs:
+Do:
 - Break your work into many prompts, written using your own phrasing
 - Write code manually on occasion when Aider is struggling and you can do things yourself faster
 - Submit (commit+push) Aider prompt history
@@ -55,9 +53,9 @@ to copy it from our main semester repo to your cloned project repo.
 Go to the `p2` directory in the main repo, then run the following (replacing `<PROJECT REPO>` with the path to where you cloned your repo:
 
 ```
-cp -r property.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.dataset docker-compose.yml addresses.csv.gz ai.md port.sh <PROJECT REPO>
+cp -r property.proto property-original.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.dataset docker-compose.yml addresses.csv.gz ai.md port.sh <PROJECT REPO>
 cd <PROJECT REPO>
-git add property.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.dataset docker-compose.yml addresses.csv.gz ai.md port.sh
+git add property.proto property-original.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.dataset docker-compose.yml addresses.csv.gz ai.md port.sh
 git commit -m 'starter code'
 ```
 
@@ -78,13 +76,13 @@ Run `docker compose ps -a`.  You should see 3 cache containers with starter code
 Determine the port number (VM side) for one of the cache containers, and send it a request for parcel `070922106137`:
 
 ```
-curl localhost:<PORT>/address/070922106137
+curl localhost:<PORT>/parcelnum/070922106137
 ```
 
 For your convenience, we provide a small script (port.sh) for looking up the external port number for one of your containers, because it make change each time.  You can use backticks to run the script to get the port number, then immediately use it in a curl command.  For example, you could do the following (change your container name as necessary):
 
 ```
-curl localhost:`./port.sh p2-cache-1`/address/070922106137
+curl localhost:`./port.sh p2-cache-1`/parcelnum/070922106137
 
 ```
 You should get `{"addrs":["1308 W Dayton St"],"error":null,"source":"1"}`.  This indicates parcel number 070922106137 corresponds to "1308 W Dayton St" (Union South!).
@@ -113,39 +111,37 @@ The cache layer initially talks to `java-dataset`.  After you port the
 backend to Python in Part 3, you'll switch it to talk to `dataset`
 instead.
 
-## Part 1 (No AI): Retry
+## Part 1: Load Balance and Retry
 
-The provided `cache.py` already alternates requests between dataset
-servers 1 and 2 (round-robin).  The `"source"` field in the JSON
-response indicates which server answered: `"1"` or `"2"`.
+Write code for this part by hand, without AI code gen, in cache.py.
 
-Currently, if the dataset server that cache.py tries to contact is
-down, the gRPC call raises a `grpc.RpcError` and the request fails.
-Add retry logic so that the cache layer can tolerate a single server
-being down.
+In cache.py, we have one stub corresponding to the server in java-dataset-1.  Create a second stub corresponding to the other Java dataset server, and keep track of what stub received the previous request.  Alternate between them to balance the load between the dataset servers (this is called *load balancing*).  The "source" field should indicate whether our result is from `java-dataset-1` ("2") or `java-dataset-1` ("2").
 
-Specifications:
-* When a gRPC call fails with `grpc.RpcError`, immediately try the **other** dataset server (no sleep between attempts)
-* Make at most **2 total attempts** (one per server)
-* If both fail, return an error string in the `"error"` field of the JSON response
-* This retry logic should apply to all endpoints (current and any you add later)
+You should always think carefully about the different ways code can fail.  Ask: should we propogate an error (so it is more clear what went wrong)?  Can we handle the failure somehow?
 
-To test: bring down one java-dataset container with `docker compose
-stop` or `docker kill`, and verify that requests still succeed (with
-the source reflecting the surviving server).  Bring both down and
-verify you get an error response.
+Look at cache.py, and observe there are three broad cases to consider:
+1. we get a gRPC response from the server, but the failed flag is True
+2. the gRPC call produces a gRPC specific exception (browse this repo to learn what the exception is, and how to catch it: https://github.com/avinassh/grpc-errors/tree/master/python)
+3. the gRPC call produces a different kind of exception
 
-## Part 2 (No AI): LRU Caching
+For (3), convert the exception to a str and return it in the "error" field of the JSON response.
 
-Implement an LRU (least recently used) cache of size **6** in `cache.py`
-for the `AddressByParcel` endpoint.
+For (2), try the gRPC request one more time, to the other dataset server.  If that one fails too, return "grpc error" in the "error" field of the JSON response.
 
-Specifications:
-* Cache key: the parcel string.  Cache value: the list of addresses
-* On a **cache hit**: return the cached addresses with `"source": "cache"` (no gRPC call)
-* On a **cache miss**: make the gRPC call as usual, store the result in the cache, and return with `"source": "1"` or `"2"`
+Verify your work manually before proceeding:
+1. repeatedly make requests with curl to one of the cache servers.  Make sure the "source" field alternates between the stubs.
+2. use `docker kill` to kill one of the dataset containers.  Make sure the "source" always indicates we're getting a response from the healthy server
+3. kill the other dataset and makes sure we get the expected "grpc error"
 
-## Part 3 (With Aider): Port Java Backend to Python
+## Part 2: LRU Caching
+
+Write code for this part by hand, without AI code gen.
+
+Review the LRU cache implementation we did in class: https://git.doit.wisc.edu/cdis/cs/courses/cs544/s26/main/-/tree/main/demos/cache-practice.
+
+Implement an LRU cache of size 6 in `cache.py` for `parcel_lookup`.  If there is a parcel number in the cache, we should use the cache ("source" will be "cache") instead of making a request to a dataset server.
+
+## Part 3: Port Java Backend to Python
 
 To install Aider, use pip to install the Aider installer program
 (perhaps in a virtual env): `pip3 install aider-install`.  Then, run
@@ -164,7 +160,6 @@ After `cd`ing to your the directory where you cloned the repo for your project, 
 ```
 aider --model gemini/gemini-2.5-pro
 ```
-
 
 Read through `src/main/java/DatasetServer.java` carefully.  Your goal
 is to create a `dataset.py` that implements the same gRPC service in
