@@ -9,7 +9,7 @@ services:
     deploy:
       replicas: 3
     ports:
-      - "8080"
+      - "5000"
     environment:
       - PROJECT=${PROJECT}
   java-dataset:

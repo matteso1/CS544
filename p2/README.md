@@ -1,6 +1,6 @@
 # DRAFT! Don't start yet
 
-# P2 (3% of grade): gRPC and Containers
+# P2 (3% of grade): Distributed Property Lookup Service
 
 ## Overview
 
@@ -17,33 +17,22 @@ will port this code to Python.
 Learning objectives:
 * tolerate failures with retries
 * implement an LRU cache
+* implement new gRPC calls
+* generate and review code with AI assistance
 * port code between languages (Java → Python)
-* prompt Aider to generate code on your behalf
 
 Before starting, please review the [general project directions](../projects.md).
 
+## Corrections/Clarifications
+
+* none yet
+
 ## AI Usage
 
-Parts 1 and 2 must be completed **without AI assistance** (no Aider,
-no ChatGPT, no Copilot, etc.).  Parts 3 and 4 use Aider.
-
-To install Aider, use pip to install the Aider installer program
-(perhaps in a virtual env): `pip3 install aider-install`.  Then, run
-the installer itself: `aider-install`.
-
-Aider can be used in combination with different AI models.  For this
-project, you are required to use `gemini-2.5-pro`.  To get access:
-
-* go to https://aistudio.google.com/
-* create an API key, and copy it
-* store the key in an environment variable, like this: `export GEMINI_API_KEY="your-api-key-here"`.  You may want to put this in `~/.bashrc` so it runs with every new bash session (or whatever file is equivalent if you are using a different shell)
-* follow the directions on [Canvas](https://canvas.wisc.edu/courses/501599/discussion_topics/2367597) to link it to your Google Cloud credits.
-
-After `cd`ing to your the directory where you cloned the repo for your project, start Aider like this:
-
-```
-aider --model gemini/gemini-2.5-pro
-```
+You may use AI to ask questions about code and understand it on all
+parts of this project, but there are restrictions on code generation.
+Specifically, you may only use AI to generate code in parts 3 and 4,
+and you may only use a specific tool: Aider, configured to use Gemini 2.5 pro.
 
 ### Requirements
 
@@ -57,6 +46,56 @@ DOs:
 - Break your work into many prompts, written using your own phrasing
 - Write code manually on occasion when Aider is struggling and you can do things yourself faster
 - Submit (commit+push) Aider prompt history
+
+## Setup
+
+There is quite a bit of starter code for this project.  You will need
+to copy it from our main semester repo to your cloned project repo.
+
+Go to the `p2` directory in the main repo, then run the following (replacing `<PROJECT REPO>` with the path to where you cloned your repo:
+
+```
+cp -r property.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.dataset docker-compose.yml addresses.csv.gz ai.md port.sh <PROJECT REPO>
+cd <PROJECT REPO>
+git add property.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.dataset docker-compose.yml addresses.csv.gz ai.md port.sh
+git commit -m 'starter code'
+```
+
+Now, look at the docker-compose.yaml file, and run this:
+
+```
+export PROJECT=p2
+docker compose up --build -d -t 0
+```
+
+Things to note:
+* this compose file specifies how to build the three Docker images needed for the project (look at the `context` and `dockerfile` fields), and the `--build` option tells compose to do the builds if anything has changed
+* the `-t 0` option says to immediately replace existing containers if you want to update your code, without waiting
+* all the port forwarding options specify 5000 as the port inside a container, but we do not specify what VM port should forward to this.  Compose will pick for you
+
+Run `docker compose ps -a`.  You should see 3 cache containers with starter code and 2 dataset containers, based on Java.  The Python-based dataset servers will have exited because the code for them is not written yet (that will be your job!).
+
+Determine the port number (VM side) for one of the cache containers, and send it a request for parcel `070922106137`:
+
+```
+curl localhost:<PORT>/address/070922106137
+```
+
+For your convenience, we provide a small script (port.sh) for looking up the external port number for one of your containers, because it make change each time.  You can use backticks to run the script to get the port number, then immediately use it in a curl command.  For example, you could do the following (change your container name as necessary):
+
+```
+curl localhost:`./port.sh p2-cache-1`/address/070922106137
+
+```
+You should get `{"addrs":["1308 W Dayton St"],"error":null,"source":"1"}`.  This indicates parcel number 070922106137 corresponds to "1308 W Dayton St" (Union South!).
+
+For testing purposes, you make wish to bypass the cache, and fetch data from the dataset directly.  Note that these communicate via gRPC (not REST), so you will need a special program, which we provide (`parcel_lookup.py`), for making the gRPC call:
+
+```
+python3 parcel_lookup.py localhost `./port.sh p2-java-dataset-1` 070922106137
+```
+
+To run the above outside of a container, you need to create a Python venv and install gRPC/protobuf packages (check Dockerfile.cache and match versions).
 
 ## Architecture
 
@@ -73,90 +112,6 @@ The system has 7 containers managed by Docker Compose:
 The cache layer initially talks to `java-dataset`.  After you port the
 backend to Python in Part 3, you'll switch it to talk to `dataset`
 instead.
-
-## Setup
-
-Take a look at the provided Docker compose file (you may not modify
-it).  Note that there are three services.  The cache replicas will
-forward random ports on the VM (probably not 8000-8002) to port 8080
-inside the containers.
-
-Set the PROJECT environment variable:
-
-```
-export PROJECT=p2
-```
-
-Build and start the provided services.  Because the `docker-compose.yml`
-includes `build:` directives pointing to each Dockerfile, you can build
-all images and start all containers in one command with the `--build` flag:
-
-```
-docker compose up --build -d
-```
-
-This is equivalent to running `docker build` separately for each
-service, then `docker compose up -d`.  The `--build` flag tells
-Compose to (re)build the images before starting.  You'll want to use
-this whenever you change code — Compose will only rebuild images whose
-files have changed.
-
-When iterating on code, you can rebuild and restart in one step.  The
-`-t 0` flag skips the default 10-second graceful shutdown wait when
-replacing containers, and only containers whose images changed get
-recreated:
-
-```
-docker compose up --build -d -t 0
-```
-
-Test that things work:
-
-```bash
-# Find the mapped ports for cache containers
-docker compose ps
-
-# Test an address lookup via the cache layer
-curl http://localhost:<port>/address/081023301063
-```
-
-You should see JSON like:
-```json
-{"addrs":["5462 Congress Ave Unit 3","5462 Congress Ave Unit 4","5464 Congress Ave Unit 1","5464 Congress Ave Unit 2"],"error":null,"source":"1"}
-```
-
-Multiple requests should alternate `"source"` between `"1"` and `"2"`.
-
-You can also test the Java gRPC backend directly using the provided
-client.  First, set up a virtual environment with the gRPC libraries:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install grpcio==1.76.0 grpcio-tools==1.76.0 protobuf==6.33.5
-python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. property.proto
-```
-
-Then test (check the mapped port with `docker compose ps`):
-
-```bash
-python client.py localhost <port> 081023301063
-```
-
-## Provided Files
-
-Spend some time reading and understanding these before you start coding:
-
-* `property.proto` — gRPC service definition with one RPC (`AddressByParcel`).  Note the `repeated` keyword in the response message — this means the field is a list (zero or more values), similar to a Python list or Java `List`.  In Python generated code, a `repeated string` field behaves like a list of strings.
-* `src/main/java/DatasetServer.java` — Java gRPC server; reads `addresses.csv.gz`, indexes by parcel number, returns sorted addresses
-* `build.gradle` / `settings.gradle` — Gradle build for the Java server
-* `cache.py` — Flask HTTP server with one route (`/address/<parcel>`), round-robin between two dataset servers, no caching or retry
-* `client.py` — CLI tool to test a gRPC dataset server directly
-* `Dockerfile.java-dataset` — builds the Java gRPC server image
-* `Dockerfile.cache` — builds the cache layer image
-* `Dockerfile.dataset` — skeleton for your Python gRPC server (Part 3)
-* `docker-compose.yml` — orchestrates all services (do not modify)
-* `addresses.csv.gz` — Madison property address dataset
 
 ## Part 1 (No AI): Retry
 
@@ -192,6 +147,25 @@ Specifications:
 
 ## Part 3 (With Aider): Port Java Backend to Python
 
+To install Aider, use pip to install the Aider installer program
+(perhaps in a virtual env): `pip3 install aider-install`.  Then, run
+the installer itself: `aider-install`.
+
+Aider can be used in combination with different AI models.  For this
+project, you are required to use `gemini-2.5-pro`.  To get access:
+
+* go to https://aistudio.google.com/
+* create an API key, and copy it
+* store the key in an environment variable, like this: `export GEMINI_API_KEY="your-api-key-here"`.  You may want to put this in `~/.bashrc` so it runs with every new bash session (or whatever file is equivalent if you are using a different shell)
+* follow the directions on [Canvas](https://canvas.wisc.edu/courses/501599/discussion_topics/2367597) to link it to your Google Cloud credits.
+
+After `cd`ing to your the directory where you cloned the repo for your project, start Aider like this:
+
+```
+aider --model gemini/gemini-2.5-pro
+```
+
+
 Read through `src/main/java/DatasetServer.java` carefully.  Your goal
 is to create a `dataset.py` that implements the same gRPC service in
 Python — given a parcel string, it returns the same sorted list of
@@ -207,11 +181,11 @@ Steps:
    ```
    docker build . -f Dockerfile.dataset -t p2-dataset
    ```
-4. Use `client.py` to verify your Python server returns the same
-   results as the Java server:
+4. Use `parcel_lookup.py` to verify your Python server returns the same
+   results as the Java server (check mapped ports with `docker compose ps`):
    ```bash
-   python client.py ${PROJECT}-java-dataset-1 5000 081023301063
-   python client.py ${PROJECT}-dataset-1 5000 081023301063
+   python parcel_lookup.py localhost <java-dataset-port> 081023301063
+   python parcel_lookup.py localhost <dataset-port> 081023301063
    ```
    The output should be identical.
 5. Once verified, update `cache.py` to point at the Python `dataset`
