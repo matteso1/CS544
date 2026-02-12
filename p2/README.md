@@ -107,10 +107,6 @@ The system has 7 containers managed by Docker Compose, which interact as follows
 | `java-dataset` | 2 | Java | gRPC server — serves address data (provided, reference implementation) |
 | `dataset` | 2 | Python | gRPC server — you build this by porting the Java code |
 
-The cache layer initially talks to `java-dataset`.  After you port the
-backend to Python in Part 3, you'll switch it to talk to `dataset`
-instead.
-
 ## Part 1: Load Balance and Retry
 
 Write code for this part by hand, without AI code gen, in cache.py.
@@ -133,6 +129,8 @@ Verify your work manually before proceeding:
 2. use `docker kill` to kill one of the dataset containers.  Make sure the "source" always indicates we're getting a response from the healthy server
 3. kill the other dataset and makes sure we get the expected "grpc error"
 
+**Commit and push to GitLab before going to the next part!**
+
 ## Part 2: LRU Caching
 
 Write code for this part by hand, without AI code gen.
@@ -140,6 +138,8 @@ Write code for this part by hand, without AI code gen.
 Review the LRU cache implementation we did in class: https://git.doit.wisc.edu/cdis/cs/courses/cs544/s26/main/-/tree/main/demos/cache-practice.
 
 Implement an LRU cache of size 6 in `cache.py` for `parcel_lookup`.  If there is a parcel number in the cache, we should use the cache ("source" will be "cache") instead of making a request to a dataset server.
+
+**Commit and push to GitLab before going to the next part!**
 
 ## Part 3: Port Java Backend to Python
 
@@ -244,7 +244,37 @@ Tips:
 
 Now that you have all the relevant context (Java code, CSV format, gRPC boilerplate), write a prompt asking Aider to generate a `dataset.py` file with the same behaviour as the Java program, but that uses column names instead of column indexes.
 
-TODO: should it use pandas?
+The first generated code is unlikely to ideal.  You should give further instructions until you feel you own the code, or at least ask Aider to justify things it did that don't make sense to you.  Just accepting code you don't understand is "vibe coding" (not our approach in 544), and if you you vibe code, debugging will be a nightmare for you when something inevitably goes wrong.
+
+**Tip:** With AI, generating code is fast, but reading and checking code is slow.  Thus, getting code that does things in a way that makes sense to you, using packages/modules you are familiar with, will make the hard part somewhat easier.  Thus, even if AI generates code that seems to work, you should provide it feedback until you personally are comfortable with the code.  For example, if you have used `pandas` a lot, you should consider directing Aider to implement `dataset.py` using pandas.
+
+Update `Dockerfile.dataset` as necessary to run your new implementation by default when a container starts.
+
+### Cache Updates
+
+Make `cache.py` flexible so that it uses either the Java or Python
+dataset backend based on the `DATASET_IMPLEMENTATION` environment
+variable.  When set to `JAVA` (the default), the cache should connect
+to the `java-dataset` service; when set to `PYTHON`, it should
+connect to the `dataset` service.
+
+You should be able to connect the cache layer with your new dataset implementation like this:
+```
+export DATASET_IMPLEMENTATION=PYTHON
+docker compose up --build -d -t 0
+```
+
+Verify that your Python dataset produces the same results as the Java
+one by making the same curl requests from earlier parts.  For example, you could check that the Java and Python implementations return the same result for parcel 070922106137:
+
+* `python3 parcel_lookup.py localhost `./port.sh p2-java-dataset-1` 070922106137`
+* `python3 parcel_lookup.py localhost `./port.sh p2-dataset-1` 070922106137`
+
+A good (but optional) think to do would be to write a small test tool that makes sure the Python and Java implementations return the SAME results for EVERY parcel in addresses.csv.gz.  Writing little tools like this is easier than you think, because AI can get it right quickly.  Most people are using AI to go faster, but if use it to create more validation tools, you'll be using AI tools to produce higher quality software (not "AI slop").
+
+You should also do some curl commands to the cache to make sure it works with your new backend.  Think about how to verify the cache is actually communicating with your new backend (not the Java one), otherwise your manual testing will be misleading.
+
+**Commit and push to GitLab before going to the next part!**
 
 ## Part 4 (With Aider): New Endpoints End-to-End
 

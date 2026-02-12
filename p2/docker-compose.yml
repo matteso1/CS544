@@ -12,6 +12,7 @@ services:
       - "5000"
     environment:
       - PROJECT=${PROJECT}
+      - DATASET_IMPLEMENTATION=${DATASET_IMPLEMENTATION:-JAVA}
   java-dataset:
     image: ${PROJECT}-java-dataset
     build:
