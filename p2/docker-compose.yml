@@ -24,11 +24,11 @@ services:
       - "5000"
     environment:
       - PROJECT=${PROJECT}
-  dataset:
-    image: ${PROJECT}-dataset
+  python-dataset:
+    image: ${PROJECT}-python-dataset
     build:
       context: .
-      dockerfile: Dockerfile.dataset
+      dockerfile: Dockerfile.python-dataset
     deploy:
       replicas: 2
     ports:

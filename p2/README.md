@@ -53,9 +53,9 @@ to copy it from our main semester repo to your cloned project repo.
 Go to the `p2` directory in the main repo, then run the following (replacing `<PROJECT REPO>` with the path to where you cloned your repo:
 
 ```
-cp -r property.proto property-original.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.dataset docker-compose.yml addresses.csv.gz ai.md port.sh <PROJECT REPO>
+cp -r property.proto property-original.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.python-dataset docker-compose.yml addresses.csv.gz ai.md port.sh <PROJECT REPO>
 cd <PROJECT REPO>
-git add property.proto property-original.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.dataset docker-compose.yml addresses.csv.gz ai.md port.sh
+git add property.proto property-original.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.python-dataset docker-compose.yml addresses.csv.gz ai.md port.sh
 git commit -m 'starter code'
 ```
 
@@ -238,7 +238,7 @@ The first generated code is unlikely to be ideal.  You should give further instr
 
 **Tip:** With AI, generating code is fast, but reading and checking code is slow.  Thus, getting code that does things in a way that makes sense to you, using packages/modules you are familiar with, will make the hard part somewhat easier.  Thus, even if AI generates code that seems to work, you should provide it feedback until you personally are comfortable with the code.  For example, if you have used `pandas` a lot, you should consider directing Aider to implement `dataset.py` using pandas.
 
-Update `Dockerfile.dataset` as necessary to run your new implementation by default when a container starts.
+Update `Dockerfile.python-dataset` as necessary to run your new implementation by default when a container starts.
 
 ### Cache Updates
 
@@ -246,7 +246,7 @@ Make `cache.py` flexible so that it uses either the Java or Python
 dataset backend based on the `DATASET_IMPLEMENTATION` environment
 variable.  When set to `JAVA` (the default), the cache should connect
 to the `java-dataset` service; when set to `PYTHON`, it should
-connect to the `dataset` service.
+connect to the `python-dataset` service.
 
 You should be able to connect the cache layer with your new dataset implementation like this:
 ```
@@ -258,7 +258,7 @@ Verify that your Python dataset produces the same results as the Java
 one by making the same curl requests from earlier parts.  For example, you could check that the Java and Python implementations return the same result for parcel 070922106137:
 
 * `python3 parcel_lookup.py localhost `./port.sh p2-java-dataset-1` 070922106137`
-* `python3 parcel_lookup.py localhost `./port.sh p2-dataset-1` 070922106137`
+* `python3 parcel_lookup.py localhost `./port.sh p2-python-dataset-1` 070922106137`
 
 A good (but optional) thing to do would be to write a small test tool that makes sure the Python and Java implementations return the SAME results for EVERY parcel in addresses.csv.gz.  Writing little tools like this is easier than you think, because AI can get it right quickly.  Most people are using AI to go faster, but if you use it to create more validation tools, you'll be using AI tools to produce higher quality software (not "AI slop").
 
