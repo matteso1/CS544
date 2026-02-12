@@ -8,26 +8,21 @@ import os
 app = Flask("p2")
 
 project = os.environ.get("PROJECT", "p2")
-servers = [
-    f"{project}-java-dataset-1:5000",
-    f"{project}-java-dataset-2:5000",
-]
-channels = [grpc.insecure_channel(s) for s in servers]
-stubs = [property_pb2_grpc.PropertyLookupStub(ch) for ch in channels]
+channel = grpc.insecure_channel(f"{project}-java-dataset-1:5000")
+stub = property_pb2_grpc.PropertyLookupStub(channel)
 
-next_server = 0
+@app.route("/parcelnum/<parcel>")
+def parcel_lookup(parcel):
+    source = "1"
+    addrs = []
+    error = ""
 
-@app.route("/address/<parcel>")
-def address(parcel):
-    global next_server
-    idx = next_server
-    next_server = (next_server + 1) % len(stubs)
-    source = str(idx + 1)
-    try:
-        response = stubs[idx].AddressByParcel(property_pb2.ParcelRequest(parcel=parcel))
-        return flask.jsonify({"addrs": list(response.addresses), "source": source, "error": None})
-    except grpc.RpcError as e:
-        return flask.jsonify({"addrs": [], "source": source, "error": str(e)})
+    response = stub.AddressByParcel(property_pb2.ParcelRequest(parcel=parcel), timeout=1)
+    addrs = list(response.addresses)
+    if response.failed:
+        error = "unknown backend error"
+
+    return flask.jsonify({"source": source, "addrs": addrs, "error": error})
 
 def main():
     app.run("0.0.0.0", port=5000, debug=False, threaded=False)
