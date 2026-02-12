@@ -257,8 +257,10 @@ docker compose up --build -d -t 0
 Verify that your Python dataset produces the same results as the Java
 one by making the same curl requests from earlier parts.  For example, you could check that the Java and Python implementations return the same result for parcel 070922106137:
 
-* `python3 parcel_lookup.py localhost `./port.sh p2-java-dataset-1` 070922106137`
-* `python3 parcel_lookup.py localhost `./port.sh p2-python-dataset-1` 070922106137`
+```
+python3 parcel_lookup.py localhost `./port.sh p2-java-dataset-1` 070922106137
+python3 parcel_lookup.py localhost `./port.sh p2-python-dataset-1` 070922106137
+```
 
 A good (but optional) thing to do would be to write a small test tool that makes sure the Python and Java implementations return the SAME results for EVERY parcel in addresses.csv.gz.  Writing little tools like this is easier than you think, because AI can get it right quickly.  Most people are using AI to go faster, but if you use it to create more validation tools, you'll be using AI tools to produce higher quality software (not "AI slop").
 
