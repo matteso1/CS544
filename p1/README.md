@@ -17,6 +17,7 @@ Before starting, please review the [general project directions](../projects.md).
 * 2026-2-05 — Updated `autobadger` to `1.1.2` for issue called out on Piazza post #57
 * 2026-1-31 — Updated `autobadger` to `1.1.1` for issue called out on Piazza post #43
 * 2026-2-02 — Added alt option for submitting Gemini chat
+* 2026-2-09 — Added CMD hint for part 2
 
 ## AI Usage
 
@@ -108,6 +109,12 @@ Read about the model here: https://huggingface.co/mozilla-ai/gemma-3-4b-it-llama
 
 Try the quickstart directions on your VM.  Note that the model is
 about 3 GB, so the download will take a while.
+
+Hint: The quickstart directions suggests running the llamafile with 
+`./google_gemma-3-4b-it-Q6_K.llamafile`. However you can write the container's
+CMD command as `CMD ["sh", "-c", "/google_gemma-3-4b-it-Q6_K.llamafile"]`. This
+replaces the intuitive `CMD ["./google_gemma-3-4b-it-Q6_K.llamafile"]` in order
+to avoid execution issues inside the container.
 
 Now, your job is to write a Dockerfile named `Dockerfile.llm` that can be built like this:
 
