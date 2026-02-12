@@ -159,7 +159,7 @@ After `cd`ing to the directory where you cloned the repo for your project, start
 aider --model gemini/gemini-2.5-pro
 ```
 
-You can let Aider update the .gitignore if prompted.
+Aider might ask to update your .gitignore to ignore prompt history files, but it is best to decline (as you will later be asked to commit those as part of your project submission).
 
 ### Branching
 
