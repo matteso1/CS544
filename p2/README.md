@@ -38,7 +38,7 @@ Do NOT:
 - Use models other than gemini-2.5-pro for code generation
 - Copy/paste some or all of the text of the project spec (we may run similarity detection between your prompts and our spec)
 - Submit code you don't understand (either prompt Aider to use other approaches you are familiar with, or read on your own to understand Aider-generated code)
-- Don't do one big commit (or just a few): there should be incremental progress across many commits
+- Do one big commit (or just a few): there should be incremental progress across many commits
 
 Do:
 - Break your work into many prompts, written using your own phrasing
@@ -59,7 +59,7 @@ git add property.proto property-original.proto src build.gradle settings.gradle 
 git commit -m 'starter code'
 ```
 
-Now, look at the docker-compose.yaml file, and run this:
+Now, look at the docker-compose.yml file, and run this:
 
 ```
 export PROJECT=p2
@@ -79,7 +79,7 @@ Determine the port number (VM side) for one of the cache containers, and send it
 curl localhost:<PORT>/parcelnum/070922106137
 ```
 
-For your convenience, we provide a small script (port.sh) for looking up the external port number for one of your containers, because it make change each time.  You can use backticks to run the script to get the port number, then immediately use it in a curl command.  For example, you could do the following (change your container name as necessary):
+For your convenience, we provide a small script (port.sh) for looking up the external port number for one of your containers, because it may change each time.  You can use backticks to run the script to get the port number, then immediately use it in a curl command.  For example, you could do the following (change your container name as necessary):
 
 ```
 curl localhost:`./port.sh p2-cache-1`/parcelnum/070922106137
@@ -89,7 +89,7 @@ You should get `{"addrs":["1308 W Dayton St"],"error":null,"source":"1"}`.  This
 
 Note that many land parcels will have multiple addresses associated with them (for example, apartment buildings with many units).
 
-For testing purposes, you make wish to bypass the cache, and fetch data from the dataset directly.  Note that these communicate via gRPC (not REST), so you will need a special program, which we provide (`parcel_lookup.py`), for making the gRPC call:
+For testing purposes, you may wish to bypass the cache, and fetch data from the dataset directly.  Note that these communicate via gRPC (not REST), so you will need a special program, which we provide (`parcel_lookup.py`), for making the gRPC call:
 
 ```
 python3 parcel_lookup.py localhost `./port.sh p2-java-dataset-1` 070922106137
@@ -101,9 +101,9 @@ To run the above outside of a container, you need to create a Python venv and in
 
 Write code for this part by hand, without AI code gen, in cache.py.
 
-In cache.py, we have one stub corresponding to the server in java-dataset-1.  Create a second stub corresponding to the other Java dataset server, and keep track of what stub received the previous request.  Alternate between them to balance the load between the dataset servers (this is called *load balancing*).  The "source" field should indicate whether our result is from `java-dataset-1` ("2") or `java-dataset-1` ("2").
+In cache.py, we have one stub corresponding to the server in java-dataset-1.  Create a second stub corresponding to the other Java dataset server, and keep track of what stub received the previous request.  Alternate between them to balance the load between the dataset servers (this is called *load balancing*).  The "source" field should indicate whether our result is from `java-dataset-1` ("1") or `java-dataset-2` ("2").
 
-You should always think carefully about the different ways code can fail.  Ask: should we propogate an error (so it is more clear what went wrong)?  Can we handle the failure somehow?
+You should always think carefully about the different ways code can fail.  Ask: should we propagate an error (so it is more clear what went wrong)?  Can we handle the failure somehow?
 
 Look at cache.py, and observe there are three broad cases to consider:
 1. we get a gRPC response from the server, but the failed flag is True
@@ -149,7 +149,7 @@ project, you are required to use `gemini-2.5-pro`.  To get access:
 * store the key in an environment variable, like this: `export GEMINI_API_KEY="your-api-key-here"`.  You may want to put this in `~/.bashrc` so it runs with every new bash session (or whatever file is equivalent if you are using a different shell)
 * follow the directions on [Canvas](https://canvas.wisc.edu/courses/501599/discussion_topics/2367597) to link it to your Google Cloud credits.
 
-After `cd`ing to your the directory where you cloned the repo for your project, start Aider like this:
+After `cd`ing to the directory where you cloned the repo for your project, start Aider like this:
 
 ```
 aider --model gemini/gemini-2.5-pro
@@ -207,13 +207,13 @@ You can also ask Aider for a code review.
 
 **Example prompt:** `Review the Java dataset implementation.  How can it be improved?`
 
-Note that Aider/Gemini might enthusiastically offer to improve the code, but decline (we're just practing AI-based code review at this point).
+Note that Aider/Gemini might enthusiastically offer to improve the code, but decline (we're just practicing AI-based code review at this point).
 
-One key weakness if of the Java implementation is hardcoding of the column numbers (instead of using column names).  Did Aider identify that?  If not, see if you prompt further to specifically explore corner cases or hardcoding.  With better prompts, you can get better feedback.  You are encouraged to seek such AI feedback on your own code as well.
+One key weakness of the Java implementation is hardcoding of the column numbers (instead of using column names).  Did Aider identify that?  If not, see if you prompt further to specifically explore corner cases or hardcoding.  With better prompts, you can get better feedback.  You are encouraged to seek such AI feedback on your own code as well.
 
-When porting to Python (next section), you will ask Aider to use column names instead of hardcoding column indexes.  However, unless Aider inspects the data file, it will probably "hallucinate" what columns are there, basically guessing names.  Getting better generated code usually involves giving Aider better context, in this case the header line.  The file is compressed, but Aider can run commands to extract this info, if let it:
+When porting to Python (next section), you will ask Aider to use column names instead of hardcoding column indexes.  However, unless Aider inspects the data file, it will probably "hallucinate" what columns are there, basically guessing names.  Getting better generated code usually involves giving Aider better context, in this case the header line.  The file is compressed, but Aider can run commands to extract this info, if you let it:
 
-**Example prompt:** `run a command to see the first 5 files of addresses.csv.gz`
+**Example prompt:** `run a command to see the first 5 lines of addresses.csv.gz`
 
 If prompted, add the command output to the prompt, but do NOT add the file itself (especially since it is compressed).
 
@@ -234,7 +234,7 @@ Tips:
 
 Now that you have all the relevant context (Java code, CSV format, gRPC boilerplate), write a prompt asking Aider to generate a `dataset.py` file with the same behaviour as the Java program, but that uses column names instead of column indexes.
 
-The first generated code is unlikely to ideal.  You should give further instructions until you feel you own the code, or at least ask Aider to justify things it did that don't make sense to you.  Just accepting code you don't understand is "vibe coding" (not our approach in 544), and if you you vibe code, debugging will be a nightmare for you when something inevitably goes wrong.
+The first generated code is unlikely to be ideal.  You should give further instructions until you feel you own the code, or at least ask Aider to justify things it did that don't make sense to you.  Just accepting code you don't understand is "vibe coding" (not our approach in 544), and if you vibe code, debugging will be a nightmare for you when something inevitably goes wrong.
 
 **Tip:** With AI, generating code is fast, but reading and checking code is slow.  Thus, getting code that does things in a way that makes sense to you, using packages/modules you are familiar with, will make the hard part somewhat easier.  Thus, even if AI generates code that seems to work, you should provide it feedback until you personally are comfortable with the code.  For example, if you have used `pandas` a lot, you should consider directing Aider to implement `dataset.py` using pandas.
 
@@ -260,7 +260,7 @@ one by making the same curl requests from earlier parts.  For example, you could
 * `python3 parcel_lookup.py localhost `./port.sh p2-java-dataset-1` 070922106137`
 * `python3 parcel_lookup.py localhost `./port.sh p2-dataset-1` 070922106137`
 
-A good (but optional) think to do would be to write a small test tool that makes sure the Python and Java implementations return the SAME results for EVERY parcel in addresses.csv.gz.  Writing little tools like this is easier than you think, because AI can get it right quickly.  Most people are using AI to go faster, but if use it to create more validation tools, you'll be using AI tools to produce higher quality software (not "AI slop").
+A good (but optional) thing to do would be to write a small test tool that makes sure the Python and Java implementations return the SAME results for EVERY parcel in addresses.csv.gz.  Writing little tools like this is easier than you think, because AI can get it right quickly.  Most people are using AI to go faster, but if you use it to create more validation tools, you'll be using AI tools to produce higher quality software (not "AI slop").
 
 You should also do some curl commands to the cache to make sure it works with your new backend.  Think about how to verify the cache is actually communicating with your new backend (not the Java one), otherwise your manual testing will be misleading.
 
@@ -286,7 +286,7 @@ Update `AddressResponse` in property.proto so that we get rid of `failed` and ad
 
 Requirements:
 * dataset.py should return a "no addresses found" error when a lookup matches no addresses; you can choose the specific error message for other scenarios
-* take care when removing and adding fields in a protobuf.  Your cache layer needs to still work with the Java dataset, which will use the old/original version of the protobufs (found in `property-original.proto` (you may not change that one).
+* take care when removing and adding fields in a protobuf.  Your cache layer needs to still work with the Java dataset, which will use the old/original version of the protobufs found in `property-original.proto` (you may not change that one).
 
 ## Submission
 
@@ -309,6 +309,8 @@ bypass caching and interact with your dataset layer directly.
 We will copy in the `docker-compose.yml`, `addresses.csv.gz`,
 `property-original.proto`, and `DatasetServer.java` files, overwriting
 anything you might have changed.
+
+**Optional:** consider providing feedback on the project to earn extra credit: https://tyler.caraza-harter.com/cs544/s26/forms.html.
 
 ## Tester
 
