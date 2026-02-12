@@ -85,7 +85,7 @@ For your convenience, we provide a small script (port.sh) for looking up the ext
 curl localhost:`./port.sh p2-cache-1`/parcelnum/070922106137
 
 ```
-You should get `{"addrs":["1308 W Dayton St"],"error":null,"source":"1"}`.  This indicates parcel number 070922106137 corresponds to "1308 W Dayton St" (Union South!).
+You should get `{"addrs":["1308 W Dayton St"],"error":"","source":"1"}`.  This indicates parcel number 070922106137 corresponds to "1308 W Dayton St" (Union South!).
 
 Note that many land parcels will have multiple addresses associated with them (for example, apartment buildings with many units).
 
@@ -112,7 +112,7 @@ Look at cache.py, and observe there are three broad cases to consider:
 
 For (3), convert the exception to a str and return it in the "error" field of the JSON response.
 
-For (2), try the gRPC request one more time, to the other dataset server.  If that one fails too, return "grpc error" in the "error" field of the JSON response.
+For (2), try the gRPC request one more time, to the other dataset server.  If that one fails too, return "grpc error" in the "error" field of the JSON response.  With retry, the "source" should reflect the dataset attempted, regardless of whether the attempt succeeded.
 
 Verify your work manually before proceeding:
 1. repeatedly make requests with curl to one of the cache servers.  Make sure the "source" field alternates between the stubs.
