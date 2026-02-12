@@ -1,5 +1,3 @@
-# DRAFT! Don't start yet
-
 # P2 (3% of grade): Distributed Property Lookup Service
 
 ## Overview
@@ -53,9 +51,15 @@ to copy it from our main semester repo to your cloned project repo.
 Go to the `p2` directory in the main repo, then run the following (replacing `<PROJECT REPO>` with the path to where you cloned your repo:
 
 ```
-cp -r property.proto property-original.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.python-dataset docker-compose.yml addresses.csv.gz ai.md port.sh <PROJECT REPO>
+cp -r property.proto property-original.proto src build.gradle \
+  settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset \
+  Dockerfile.cache Dockerfile.python-dataset docker-compose.yml \
+  addresses.csv.gz port.sh <PROJECT REPO>
 cd <PROJECT REPO>
-git add property.proto property-original.proto src build.gradle settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset Dockerfile.cache Dockerfile.python-dataset docker-compose.yml addresses.csv.gz ai.md port.sh
+git add property.proto property-original.proto src build.gradle \
+  settings.gradle cache.py parcel_lookup.py Dockerfile.java-dataset \
+  Dockerfile.cache Dockerfile.python-dataset docker-compose.yml \
+  addresses.csv.gz port.sh
 git commit -m 'starter code'
 ```
 
@@ -127,7 +131,7 @@ Write code for this part by hand, without AI code gen.
 
 Review the LRU cache implementation we did in class: https://git.doit.wisc.edu/cdis/cs/courses/cs544/s26/main/-/tree/main/demos/cache-practice.
 
-Implement an LRU cache of size 6 in `cache.py` for `parcel_lookup`.  If there is a parcel number in the cache, we should use the cache ("source" will be "cache") instead of making a request to a dataset server.
+Implement an LRU cache of size 6 in `cache.py` for `parcel_lookup`.  If there is a parcel number in the cache, we should use the cache ("source" will be "cache") instead of making a request to a dataset server.  Never cache an error, meaning that if you have a cache miss, and then fail to get a valid result from any dataset server, you shouldn't add anything to the cache.
 
 **Commit and push to GitLab before going to the next part!**
 
@@ -280,7 +284,7 @@ In addition to the parcelnum endpoint, users should be able to lookup addresses 
 curl localhost:<PORT>/zip/53706
 ```
 
-Update the various files as necessary so that this returns all addresses (in the same format as with parcel lookup).  You are not required to implement the advanced functionality of `parcelnum` (round robin, retry, and caching), though it is nice if you do.  You have flexibility regarding what the gRPC communication looks like between the cache and dataset.
+Update the various files as necessary so that this returns all addresses (in the same format as with parcel lookup).  You are not required to implement the advanced functionality of `parcelnum` (round robin, retry, and caching), though it is nice if you do (the tester should accept with or without these).  You have flexibility regarding what the gRPC communication looks like between the cache and dataset.
 
 ### Error Handling
 
@@ -288,7 +292,7 @@ Update `AddressResponse` in property.proto so that we get rid of `failed` and ad
 
 Requirements:
 * dataset.py should return a "no addresses found" error when a lookup matches no addresses; you can choose the specific error message for other scenarios
-* take care when removing and adding fields in a protobuf.  Your cache layer needs to still work with the Java dataset, which will use the old/original version of the protobufs found in `property-original.proto` (you may not change that one).
+* be VERY careful when removing and adding fields in a protobuf.  Your cache layer needs to still work with the Java dataset, which will use the old/original version of the protobufs found in `property-original.proto` (you may not change that one).  Backwards compatibility is tricky.
 
 ## Submission
 
