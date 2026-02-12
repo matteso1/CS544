@@ -87,6 +87,8 @@ curl localhost:`./port.sh p2-cache-1`/parcelnum/070922106137
 ```
 You should get `{"addrs":["1308 W Dayton St"],"error":null,"source":"1"}`.  This indicates parcel number 070922106137 corresponds to "1308 W Dayton St" (Union South!).
 
+Note that many land parcels will have multiple addresses associated with them (for example, apartment buildings with many units).
+
 For testing purposes, you make wish to bypass the cache, and fetch data from the dataset directly.  Note that these communicate via gRPC (not REST), so you will need a special program, which we provide (`parcel_lookup.py`), for making the gRPC call:
 
 ```
@@ -276,74 +278,50 @@ You should also do some curl commands to the cache to make sure it works with yo
 
 **Commit and push to GitLab before going to the next part!**
 
-## Part 4 (With Aider): New Endpoints End-to-End
+## Part 4: New End-to-End Features
 
-Add two new lookup endpoints that go all the way through the stack:
-new RPCs in the proto, new handler code in `dataset.py`, and new HTTP
-routes in `cache.py`.
+In this section, you will add two new features: lookup by zip code and better error messages.  You can decide to write some or all yourself, or use Aider with Gemini 2.5 Pro for this part.
 
-Before you start, look at the columns in `addresses.csv.gz` — you'll
-need to figure out which columns to use.  Note that `StreetName` and
-`Address` are different columns (e.g., `StreetName` might be
-`"Congress"` while `Address` is `"5462 Congress Ave Unit 3"`).
+### Lookup By Zip
 
-| HTTP Route | Lookup Logic | Returns |
-|---|---|---|
-| `GET /addresses/zip/<zipcode>` | Match rows where `ZipCode` equals the given zipcode | `Address` values (sorted) |
-| `GET /addresses/street/<street>` | Match rows where `StreetName` equals the given street name | `Address` values (sorted) |
+In addition to the parcelnum endpoint, users should be able to lookup addresses by zipcode, like this:
 
-Steps:
-1. Extend `property.proto` with new RPC methods (you have flexibility
-   in how you design the request/response messages)
-2. Implement the new RPCs in `dataset.py`
-3. Add new HTTP routes in `cache.py` that call the new RPCs
-4. Rebuild all images (`Dockerfile.dataset` and `Dockerfile.cache`
-   both compile the proto, so both need rebuilding)
-
-Specifications:
-* All endpoints return the same JSON shape: `{"addrs": [...], "source": "...", "error": null}`
-* Addresses should be sorted alphanumerically
-* Retry logic from Part 1 should apply to the new endpoints too
-* No caching is required for the new endpoints
-
-Example test:
-```bash
-curl http://localhost:<port>/addresses/zip/53718
-curl http://localhost:<port>/addresses/street/Congress
+```
+curl localhost:<PORT>/zip/53706
 ```
 
-**AI Requirement**: use Aider to help add these endpoints.  Ask Aider
-for suggestions to make your code more efficient, and comment about
-this in `ai.md`.
+Update the various files as necessary so that this returns all addresses (in the same format as with parcel lookup).  You are not required to implement the advanced functionality of `parcelnum` (round robin, retry, and caching), though it is nice if you do.  You have flexibility regarding what the gRPC communication looks like between the cache and dataset.
+
+### Error Handling
+
+Update `AddressResponse` in property.proto so that we get rid of `failed` and add an `error` string field instead.  The field will be empty (to indicate no error) or provide a message describing the nature of the error.
+
+Requirements:
+* dataset.py should return a "no addresses found" error when a lookup matches no addresses; you can choose the specific error message for other scenarios
+* take care when removing and adding fields in a protobuf.  Your cache layer needs to still work with the Java dataset, which will use the old/original version of the protobufs (found in `property-original.proto` (you may not change that one).
 
 ## Submission
 
 Read the directions [here](../projects.md) about how to create the
 repo.
 
-Please add `.aider.input.history` and `.aider.chat.history.md` to
-your repo, and fill in the `ai.md` file.  You must be able to build
-and run like this:
+Please add `.aider.input.history` and `.aider.chat.history.md` to your
+repo.  You must be able to clone your repo to a fresh directory, and
+bring it up like this:
 
 ```
-docker build . -f Dockerfile.cache -t p2-cache
-docker build . -f Dockerfile.dataset -t p2-dataset
-docker compose up -d
+export PROJECT=p2
+export DATASET_IMPLEMENTATION=PYTHON
+docker compose up --build -d -t 0
 ```
 
-We will copy in the `docker-compose.yml` and `addresses.csv.gz` files,
-overwriting anything you might have changed.
+And then use `curl` to use your caching layer or `parcel_lookup.py`
+bypass caching and interact with your dataset layer directly.
+
+We will copy in the `docker-compose.yml`, `addresses.csv.gz`,
+`property-original.proto`, and `DatasetServer.java` files, overwriting
+anything you might have changed.
 
 ## Tester
 
-Use the **autobadger** tool on your machine to run tests against your code:
-
-```bash
-autobadger --project=p2 --verbose
-```
-
-The `--verbose` flag will print more information to the console as your tests are running.
-
-Pushing to `main` will submit your project and we will grade your code
-on `main` from a remote VM.  A GitLab issue should be pushed to your
-repository shortly after you submit.
+Details coming soon...
