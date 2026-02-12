@@ -97,18 +97,6 @@ python3 parcel_lookup.py localhost `./port.sh p2-java-dataset-1` 070922106137
 
 To run the above outside of a container, you need to create a Python venv and install gRPC/protobuf packages (check Dockerfile.cache and match versions).
 
-## Architecture
-
-The system has 7 containers managed by Docker Compose, which interact as follows:
-
-<img src="arch.png" width=600>
-
-| Service | Replicas | Language | Role |
-|---|---|---|---|
-| `cache` | 3 | Python/Flask | HTTP layer — receives web requests, forwards to dataset via gRPC |
-| `java-dataset` | 2 | Java | gRPC server — serves address data (provided, reference implementation) |
-| `dataset` | 2 | Python | gRPC server — you build this by porting the Java code |
-
 ## Part 1: Load Balance and Retry
 
 Write code for this part by hand, without AI code gen, in cache.py.
