@@ -62,7 +62,7 @@ Download the HMDA Wisconsin 2021 data into a `data` directory (this will be moun
 ```bash
 mkdir -p data
 wget https://pages.cs.wisc.edu/~harter/cs544/data/2021_public_lar_csv.zip -O data/2021_public_lar_csv.zip
-cd data && unzip 2021_public_lar_csv.zip && cd ..
+wget https://pages.cs.wisc.edu/~harter/cs544/data/2021_public_lar.parquet -O data/2021_public_lar.parquet
 ```
 
 Build and start:
@@ -72,12 +72,9 @@ export PROJECT=p3
 docker compose up --build -d -t 0
 ```
 
-The compose file defines two services:
-
-- **server**: a Flask app serving ACS tract income lookups on port 8001.  The dataset is downloaded at image build time.  You should not modify the server.
-- **client**: has `python3.13-nogil` installed.  Your `data/` directory is mounted read-only at `/data`.
-
 Verify the server is working from your VM:
+
+TODO: fix ports like in P2
 
 ```bash
 curl http://localhost:8001/55079010900
@@ -85,29 +82,83 @@ curl http://localhost:8001/55079010900
 
 You should get back a number (the median household income in thousands for that census tract).
 
-As in P2, rebuild and restart after code changes with `docker compose up --build -d -t 0`.
+## Part 1: Income Analysis
 
-## Part 1: Implementation
+The HDMA data contains US-wide loan applications for 2021.  Loan
+applications are associated with census tracts.  The American
+Community Survey (ACS) provides data about average income per census
+tract.
 
-Thread-Safe LRU Cache
+You will write a program to study housing affordability, and answer this question:
 
-In this part, you need to implement a class called `ThreadSafeLRUCache` in `app_cli/LRU.py`, which provides a thread-safe implementation of an LRU (Least Recently Used) cache.
+**For each state, what percent of loan applicants have below-median income for the corresponding census tract area?**
+
+You will write a client program that loops over the HDMA data
+directly.  But instead of accessing ACS data directly, the client will
+send requests to a server to lookup average income.  
+
+The client will need to lookup certain values repeatedly, so we will
+cache these.  Given the server implements a REST API, you will
+implement a generic HTTP cache, keyed by URL (values will be the HTTP
+responses).
+
+### HTTP Cache (cache.py)
+
+Look at `http_get` in cache.py.  The call implements retry, but no
+caching (yet).  The cache.py code can work as a program (for `python3
+cache.py args...`, the `__main__` code will run, or a module (for
+`import cache`, the main won't run, but the importer can use
+`http_get`).
+
+Add thread-safe caching functionality to `http_get`, and return True for cache
+hits.
 
 Requirements:
+* one global lock, and use it whenever shared data structures are accessed
+* do not hold the lock when doing I/O
+* implement a FIFO policy
+* choose data structures so that eviction is an O(1) operation.  You'll need to do some reading and investigation to find good built-in data types.  Note that popping index 0 from a list (as in lecture) is an O(N) operation
 
-- Correct LRU behavior
-- Implement thread-safe `get` and `put` methods using locks
-- Maintain `hits` and `misses` counters, and implemment `get_hits()` and `get_misses()` methods to retrieve these counts.
+TODO: tell them how to test it
 
-## more part 1
+### Analyzer (client.py)
 
-Implement:
+Write a client.py program that works like this:
 
-- `app_cli/client.py`
+TODO: make it a docker exec example
+```
+python app_cli/client.py inputs/raw/hmda_wi_2021_50k_sample.csv --rows 50000 --cache 2000 --threads 8
+```
 
-Provided server:
+It should open the data file, supporting zipped CSV and Parquet (infer which to do based on file extension).  Read all values from these columns to Python lists:
 
-- `app_server/server.py` (students should not change server logic)
+- `state_code`
+- `census_tract`
+- `income`
+
+After making the complete list, slice these to the first `rows` entries, based on the cmd line argument.  If `--rows=-1`, do not slice.
+
+Import the cache you wrote and initialize to the given size.
+
+Start the specified number of threads to perform the analysis.  Each should be passed a start and stop index.  Each thread will loop over the indicated range of the Python lists you loaded.  The ranges should be roughly even in size.  For example, say there are a million rows, but you load like this: `--rows 9 --cache 2000 --threads 3`.  The ranges might be like this (inclusive start, exclusive end):
+
+* thread 0: indexes 0-3
+* thread 1: indexes 3-6
+* thread 2: indexes 6-9
+
+When a thread loops over the index for a state/tract/income, it should lookup the median income for the tract (with the help of a the cache), and count the loan application as under (income < tract median income) or over (income >= tract median income).  The thread should also count hits.
+
+After the threads exit, you will need to output hit count and a percentage per state (what percent of incomes for loan applicants are < the median for the corresponding state).
+
+TODO: give an artifical example with 6 rows across 2 states and 3 tracts.
+
+The output format will be like this:
+
+```
+TODO
+```
+
+# TODO: extra material
 
 ### Client Workflow
 
