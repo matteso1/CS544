@@ -1,6 +1,6 @@
 # DRAFT!  Don't start yet.
 
-# P3 (3% of grade): Threads and Benchmarking
+# P3 (3% of grade): Loans and Performance Study
 
 ## Overview
 
@@ -11,15 +11,15 @@ You will work with:
 - HMDA loan-level data (client side)
 - ACS tract-level median household income data (server side)
 
-The client performs multi-threaded processing and uses a thread-safe LRU cache to reduce repeated server lookups.
+The client performs multi-threaded processing and uses a thread-safe FIFO cache to reduce repeated server lookups.
 
 ## Learning Objectives
 
-- Implement thread-safe shared data structures (`LRU`) with correct lock usage
+- Implement thread-safe shared data structures (`FIFO`) with correct lock usage
 - Build a multi-threaded client that interacts with a remote data service
 - Understand GIL vs No-GIL performance behavior under different thread counts
 - Design tests that validate correctness and edge-case handling
-- Benchmark and analyze format performance (`CSV`, `Parquet`, `Arrow`)
+- Benchmark and analyze format performance (`CSV` and `Parquet`)
 
 Before starting, review general project directions from class.
 
@@ -29,14 +29,11 @@ Before starting, review general project directions from class.
 
 ## AI Usage
 
-This project intentionally separates sections where AI is and is not allowed.
-
-- **Part 1**: do **not** use AI (manual implementation required)
-- **Part 2-4**: AI assistance is allowed per course policy
-
-If your section requires specific tools/models (for example Aider + approved models), follow that policy exactly.
+You must write `cache.py` by hand, without AI.  For the rest, you may use Aider with gemini-2.5-pro for anything you like.  You must use it for at least one thing of your choice.  You may not use other AI for code generation (only for asking generation questions; for example, to learn about Python data structures you might use).
 
 ## Runtime Modes (Experiments)
+
+TODO: move this into part 4
 
 Use only these two modes in experiments:
 
@@ -64,6 +61,8 @@ mkdir -p data
 wget https://pages.cs.wisc.edu/~harter/cs544/data/2021_public_lar_csv.zip -O data/2021_public_lar_csv.zip
 wget https://pages.cs.wisc.edu/~harter/cs544/data/2021_public_lar.parquet -O data/2021_public_lar.parquet
 ```
+
+Do NOT add or commit these large files in your repo.
 
 Build and start:
 
@@ -171,7 +170,7 @@ The client should skip bad rows safely (with `continue`) instead of crashing.  B
 - invalid, missing, or non-positive `income`
 - rows where server lookup returns `404` (tract not found in server dataset)
 
-After the threads exit, you will need to output hit count and a percentage per state (what percent of incomes for loan applicants are < the median for the corresponding state).
+After the threads exit, you will need to output the hit rate and a percentage per state (what percent of incomes for loan applicants are < the median for the corresponding state).
 
 For example, imagine 6 rows across 2 states and 3 tracts.  Suppose the server returns median incomes of 50 for tract A, 60 for tract B, and 40 for tract C.
 
@@ -184,7 +183,7 @@ For example, imagine 6 rows across 2 states and 3 tracts.  Suppose the server re
 | 4   | IL        | C           | 50     | 40          |
 | 5   | IL        | C           | 100    | 40          |
 
-WI has 2 rows, 1 is under: 50%.  IL has 4 rows, 1 is under the associated tract median: 25%.  There are 3 unique tracts but 6 lookups, so with a large enough cache we'd expect 3 hits.
+WI has 2 rows, 1 is under: 50%.  IL has 4 rows, 1 is under the associated tract median: 25%.  There are 3 unique tracts but 6 lookups, so with a large enough cache we'd expect 3 hits out of 6 lookups, a 50% hit rate.
 
 The output format will be like this (round down percents with `int(...)`):
 
@@ -192,7 +191,7 @@ The output format will be like this (round down percents with `int(...)`):
 ...other output you may want...
 IL: 25
 WI: 50
-hits: 3
+hit rate: 50%
 ```
 
 Make sure you calculate statistics in a thread-safe way.  There are a couple approaches you could consider:
@@ -206,7 +205,7 @@ running your client both ways.  You can read about how to write a
 program that runs other programs here:
 https://docs.python.org/3/library/subprocess.html.
 
-Your benchmark should write the measurents to a CSV file.  Another
+Your benchmark should write the measurements to a CSV file.  Another
 program should take this CSV file in, and produce a bar plot in a file
 named `storage.svg`.  You can name the other files (the two programs
 and CSV file) as you like.
@@ -214,90 +213,65 @@ and CSV file) as you like.
 To measure storage performance specifically, run with `--rows=0` so
 that no rows are processed after the load.
 
-Your measuremnts may vary, but the plot should look something like this:
+Your measurements may vary, but the plot should look something like this:
 
 TODO: plot example.
 
-## Part 3 (Memory): Cache Analysis
+## Part 3: Memory Performance
 
-Run a benchmark focused on cache hit rate.
+How does cache size impact your hit rate?  Write a benchmark program
+that runs your client with cache sizes of 1, 10, 100, 1000, and
+10000.  Use 4 threads and Parquet input for all runs.
 
-Benchmark script:
+Your benchmark should write the measurements to a CSV file.  Another
+program should take this CSV file in, and produce a line plot in a
+file named `memory.svg`.  The x-axis should be cache size and the
+y-axis should be hit rate.
 
-- `benchmarks/hitrate_bench.py`
+Your measurements may vary, but the plot should look something like this:
 
-Invocation:
+TODO: plot example.
 
-```bash
-docker run --rm -v "$(pwd)/outputs:/outputs" p3-nogil-bench python3.13-nogil benchmarks/hitrate_bench.py /outputs
-```
+## Part 4: Compute Performance
 
-Expected outputs:
+How is performance impacted by the GIL and the number of threads?
+Write a benchmark program that runs your client with thread counts of
+1, 2, 4, and 8.  For each thread count, run twice: once with
+`python3.13-nogil -X gil=1` and once with `python3.13-nogil -X gil=0`.
+Use Parquet input and a cache size of 1000 for all runs.
 
-- `outputs/hitrate.csv`
-- `outputs/hitrate.svg`
+Your benchmark should write the measurements to a CSV file.  Another
+program should take this CSV file in, and produce a line plot in a
+file named `compute.svg`.  The x-axis should be thread count and the
+y-axis should be seconds.  Plot one line for each GIL mode.
 
-Required columns in `hitrate.csv`:
+Your measurements may vary, but the plot should look something like this:
 
-- `capacity`
-- `hit_rate`
-- `hits`
-- `misses`
-
-Required setup:
-
-- single thread only (`threads = 1`)
-- pick exactly one input format for this benchmark and keep it fixed for all runs (`csv`, `parquet`, or `arrow`, your choice)
-- sweep cache size exactly over: `1, 4, 8, 16, 32`
-- report hit rate as `hits / (hits + misses)`
-
-## Part 4 (Compute): Parallelism Analysis
-
-Run a benchmark comparing thread count impact under both runtime modes.
-
-Benchmark script:
-
-- `benchmarks/thread_bench.py`
-
-Invocation:
-
-```bash
-docker run --rm -v "$(pwd)/outputs:/outputs" p3-nogil-bench python3.13-nogil benchmarks/thread_bench.py /outputs
-```
-
-Expected outputs:
-
-- `outputs/threads.csv`
-- `outputs/threads.svg`
-
-Required columns in `threads.csv`:
-
-- `threads`
-- `gil1_seconds`
-- `gil0_seconds`
-
-Required setup:
-
-- fixed input format (`csv`)
-- fixed cache size (e.g., `capacity=800`)
-- benchmark thread counts: `1, 2, 4, 8`
+TODO: plot example.
 
 ## Submission
 
-At minimum, repository should include:
+Read the directions [here](../projects.md) about how to create the
+repo.
 
-- `app_cli/LRU.py`
-- `app_cli/client.py`
-- `app_server/server.py` (provided)
-- `Dockerfile`
-- benchmark scripts:
-  - `benchmarks/thread_bench.py`
-  - `benchmarks/format_bench.py`
-  - `benchmarks/hitrate_bench.py`
-- benchmark outputs:
-  - `outputs/threads.csv`
-  - `outputs/threads.svg`
-  - `outputs/formats.csv`
-  - `outputs/formats.svg`
-  - `outputs/hitrate.csv`
-  - `outputs/hitrate.svg`
+Fill in the template here: TODO.  Do not change the page count or
+layout.  Save as a pdf (`perf.pdf`), and include it in this repo.
+
+Please add `.aider.input.history` and `.aider.chat.history.md` to your
+repo.  You must be able to clone your repo to a fresh directory, and
+bring it up like this:
+
+```
+export PROJECT=p3
+docker compose up --build -d -t 0
+```
+
+TODO: describe how we will interact with their code
+
+TODO: describe what files we expect, both with specific names, and in general.
+
+**Optional:** consider providing feedback on the project to earn extra credit: https://tyler.caraza-harter.com/cs544/s26/forms.html.
+
+## Tester
+
+Details coming soon.  Section 1 will be autograded.  Sections 2-4 will be human reviewed.
