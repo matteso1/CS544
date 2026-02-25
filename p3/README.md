@@ -51,9 +51,9 @@ Copy starter files from the `p3` directory in the main repo to your project repo
 
 ```
 cp -r app_server Dockerfile.server Dockerfile.client \
-  docker-compose.yml <PROJECT REPO>
+  docker-compose.yml port.sh <PROJECT REPO>
 cd <PROJECT REPO>
-git add app_server Dockerfile.server Dockerfile.client docker-compose.yml
+git add app_server Dockerfile.server Dockerfile.client docker-compose.yml port.sh
 git commit -m 'starter code'
 ```
 
@@ -72,12 +72,10 @@ export PROJECT=p3
 docker compose up --build -d -t 0
 ```
 
-Verify the server is working from your VM:
-
-TODO: fix ports like in P2
+Verify the server is working from your VM.  We provide a small script (`port.sh`) for looking up the external port number for one of your containers, because it may change each time.  You can use backticks to run the script to get the port number, then immediately use it in a curl command:
 
 ```bash
-curl http://localhost:8001/55079010900
+curl localhost:`./port.sh p3-server-1`/55079010900
 ```
 
 You should get back a number (the median household income in thousands for that census tract).
@@ -96,6 +94,13 @@ You will write a program to study housing affordability, and answer this questio
 You will write a client program that loops over the HDMA data
 directly.  But instead of accessing ACS data directly, the client will
 send requests to a server to lookup average income.  
+
+The server exposes tract-income lookup as REST:
+
+- Method: `GET`
+- Path: `/<tract_geoid>`
+- Success response (`200`): plain-text numeric tract median income (in thousands)
+- Missing tract (`404`): no body
 
 The client will need to lookup certain values repeatedly, so we will
 cache these.  Given the server implements a REST API, you will
@@ -119,15 +124,27 @@ Requirements:
 * implement a FIFO policy
 * choose data structures so that eviction is an O(1) operation.  You'll need to do some reading and investigation to find good built-in data types.  Note that popping index 0 from a list (as in lecture) is an O(N) operation
 
-TODO: tell them how to test it
+The `__main__` block in `cache.py` lets you test caching directly.  It initializes a cache of size 3 and fetches each URL given as an argument, printing the total hit count at the end.  Try it with `docker compose exec` (make sure compose is up first):
+
+```bash
+docker exec p3-client-1 python3.13-nogil app_cli/cache.py \
+  http://server:8001/55079010900 \
+  http://server:8001/55079002402 \
+  http://server:8001/55079010900 \
+  http://server:8001/55079002402 \
+  http://server:8001/55079010900
+```
+
+You should see `hits: 3` (the first two are misses, the last three are cache hits).
+
+Try testing your eviction policy too.  With a cache of size 3, try passing 4 different URLs, then repeating the first -- since the cache is FIFO, the first URL should have been evicted.
 
 ### Analyzer (client.py)
 
 Write a client.py program that works like this:
 
-TODO: make it a docker exec example
-```
-python app_cli/client.py inputs/raw/hmda_wi_2021_50k_sample.csv --rows 50000 --cache 2000 --threads 8
+```bash
+docker exec p3-client-1 python3.13-nogil app_cli/client.py /data/2021_public_lar_csv.zip --rows 50000 --cache 2000 --threads 8
 ```
 
 It should open the data file, supporting zipped CSV and Parquet (infer which to do based on file extension).  Read all values from these columns to Python lists:
@@ -148,91 +165,34 @@ Start the specified number of threads to perform the analysis.  Each should be p
 
 When a thread loops over the index for a state/tract/income, it should lookup the median income for the tract (with the help of a the cache), and count the loan application as under (income < tract median income) or over (income >= tract median income).  The thread should also count hits.
 
-After the threads exit, you will need to output hit count and a percentage per state (what percent of incomes for loan applicants are < the median for the corresponding state).
-
-TODO: give an artifical example with 6 rows across 2 states and 3 tracts.
-
-The output format will be like this:
-
-```
-TODO
-```
-
-# TODO: extra material
-
-### Client Workflow
-
-The client should follow two stages:
-
-1. **Read input**
-2. **Send requests to the server + compute ratios**
-
-### Server Query API
-
-The provided server exposes tract-income lookup as REST:
-
-- Host: `127.0.0.1`
-- Port: `8001`
-- Base URL: `http://127.0.0.1:8001`
-- Method: `GET`
-- Path: `/<tract_geoid>`
-- Success response (`200`): plain-text numeric tract median income (in thousands)
-- Missing tract (`404`): no body required
-  Example request: `curl http://127.0.0.1:8001/55079010900`
-
-The client should treat `404` as lookup failure and skip that row.
-`404` is expected for some rows because some tract IDs from client input (`inputs/raw/hmda_wi_2021.csv`) do not exist in the server table (`inputs/raw/acs5_2021_tract_income_us.csv`).
-
-### Reading Input
-
-For this stage, you need to implement the following function in `app_cli/client.py`:
-
-```python
-def load_input(path: str) -> "pd.DataFrame":
-    ...
-```
-
-It should take file path as input, and return a DataFrame with the following columns:
-
-- `census_tract`
-- `income`
-
-It should support file formats of `.csv`, `.parquet`, and `.arrow`.
-It should keep row order as in the original file.
-
-- For `.csv`: use normal pandas reading
-- For `.parquet`: use normal parquet reading
-- For `.arrow`: use memory mapping (`mmap`)
-- Raise `ValueError` for unsupported extensions
-
-### Client CLI
-
-Use this invocation format:
-
-```bash
-python app_cli/client.py [input_file] --threads <T> --capacity <C>
-```
-
-Notes:
-
-- `input_file` is optional; default is `inputs/raw/hmda_wi_2021.csv`
-
-### Request/Compute Stage (Stage 2)
-
-In this stage you need to implement `app_cli/client.py` that reads HMDA input rows and uses multiple threads to send tract-income lookup requests to the server. Before each request, the client must check `ThreadSafeLRUCache` implemented in Part 1; on a cache miss, it should query the server, store the result in cache, and compute the affordability ratio as `income / tract_median_income_k`.
-
-`--threads` is a required tuning variable for concurrency. If user provides `--threads T`, the client must launch exactly `T` worker threads.
-
-The client should skip bad rows safely with `continue` instead of crashing. In this project, bad rows include:
+The client should skip bad rows safely (with `continue`) instead of crashing.  Bad rows include:
 
 - invalid or missing `census_tract`
 - invalid, missing, or non-positive `income`
-- rows where server lookup returns `404` (tract key not found in server dataset)
+- rows where server lookup returns `404` (tract not found in server dataset)
 
-Quick integration run (with compose already up):
+After the threads exit, you will need to output hit count and a percentage per state (what percent of incomes for loan applicants are < the median for the corresponding state).
 
-```bash
-docker compose exec client python3.13-nogil -X gil=1 app_cli/client.py /data/hdma-wi-2021.csv --threads 4 --capacity 64
+For example, imagine 6 rows across 2 states and 3 tracts.  Suppose the server returns median incomes of 50 for tract A, 60 for tract B, and 40 for tract C.
+
+| row | state     | tract       | income | tractmedian |
+|-----|-----------|-------------|--------|-------------|
+| 0   | WI        | A           | 50     | 60          |
+| 1   | WI        | A           | 100    | 60          |
+| 2   | IL        | B           | 50     | 70          |
+| 3   | IL        | B           | 100    | 70          |
+| 4   | IL        | C           | 50     | 40          |
+| 5   | IL        | C           | 100    | 40          |
+
+WI has 2 rows, 1 is under: 50%.  IL has 4 rows, 1 is under the associated tract median: 25%.  There are 3 unique tracts but 6 lookups, so with a large enough cache we'd expect 3 hits.
+
+The output format will be like this (round down percents with `int(...)`):
+
+```
+...other output you may want...
+IL: 25
+WI: 50
+hits: 3
 ```
 
 ## Part 2 (Storage): Format Benchmark
