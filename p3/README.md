@@ -61,8 +61,8 @@ Download the HMDA Wisconsin 2021 data into a `data` directory (this will be moun
 
 ```bash
 mkdir -p data
-wget https://pages.cs.wisc.edu/~harter/cs544/data/hdma-wi-2021.zip -O data/hdma-wi-2021.zip
-cd data && unzip hdma-wi-2021.zip && cd ..
+wget https://pages.cs.wisc.edu/~harter/cs544/data/2021_public_lar_csv.zip -O data/2021_public_lar_csv.zip
+cd data && unzip 2021_public_lar_csv.zip && cd ..
 ```
 
 Build and start:
@@ -87,7 +87,9 @@ You should get back a number (the median household income in thousands for that 
 
 As in P2, rebuild and restart after code changes with `docker compose up --build -d -t 0`.
 
-## Part 1: Thread-Safe LRU Cache
+## Part 1: Implementation
+
+Thread-Safe LRU Cache
 
 In this part, you need to implement a class called `ThreadSafeLRUCache` in `app_cli/LRU.py`, which provides a thread-safe implementation of an LRU (Least Recently Used) cache.
 
@@ -97,7 +99,7 @@ Requirements:
 - Implement thread-safe `get` and `put` methods using locks
 - Maintain `hits` and `misses` counters, and implemment `get_hits()` and `get_misses()` methods to retrieve these counts.
 
-## Part 2: Client Implementation
+## more part 1
 
 Implement:
 
@@ -182,38 +184,7 @@ Quick integration run (with compose already up):
 docker compose exec client python3.13-nogil -X gil=1 app_cli/client.py /data/hdma-wi-2021.csv --threads 4 --capacity 64
 ```
 
-## Part 3: Thread Benchmarking
-
-Run a benchmark comparing thread count impact under both runtime modes.
-
-Benchmark script:
-
-- `benchmarks/thread_bench.py`
-
-Invocation:
-
-```bash
-docker run --rm -v "$(pwd)/outputs:/outputs" p3-nogil-bench python3.13-nogil benchmarks/thread_bench.py /outputs
-```
-
-Expected outputs:
-
-- `outputs/threads.csv`
-- `outputs/threads.svg`
-
-Required columns in `threads.csv`:
-
-- `threads`
-- `gil1_seconds`
-- `gil0_seconds`
-
-Required setup:
-
-- fixed input format (`csv`)
-- fixed cache size (e.g., `capacity=800`)
-- benchmark thread counts: `1, 2, 4, 8`
-
-## Part 4: Format Benchmarking
+## Part 2 (Storage): Format Benchmark
 
 Run a benchmark comparing **load_input I/O time only** across formats.
 This part should measure Stage 1 (reading) only, not request/compute.
@@ -241,7 +212,7 @@ Required columns in `formats.csv`:
 
 benchmark should call `load_input(...)` directly and won't send requests to the server, thus cache size and thread count are not part of this benchmark.
 
-## Part 5: Hit Rate Benchmarking
+## Part 3 (Memory): Cache Analysis
 
 Run a benchmark focused on cache hit rate.
 
@@ -273,6 +244,37 @@ Required setup:
 - pick exactly one input format for this benchmark and keep it fixed for all runs (`csv`, `parquet`, or `arrow`, your choice)
 - sweep cache size exactly over: `1, 4, 8, 16, 32`
 - report hit rate as `hits / (hits + misses)`
+
+## Part 4 (Compute): Parallelism Analysis
+
+Run a benchmark comparing thread count impact under both runtime modes.
+
+Benchmark script:
+
+- `benchmarks/thread_bench.py`
+
+Invocation:
+
+```bash
+docker run --rm -v "$(pwd)/outputs:/outputs" p3-nogil-bench python3.13-nogil benchmarks/thread_bench.py /outputs
+```
+
+Expected outputs:
+
+- `outputs/threads.csv`
+- `outputs/threads.svg`
+
+Required columns in `threads.csv`:
+
+- `threads`
+- `gil1_seconds`
+- `gil0_seconds`
+
+Required setup:
+
+- fixed input format (`csv`)
+- fixed cache size (e.g., `capacity=800`)
+- benchmark thread counts: `1, 2, 4, 8`
 
 ## Submission
 
