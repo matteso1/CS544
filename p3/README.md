@@ -195,33 +195,28 @@ WI: 50
 hits: 3
 ```
 
-## Part 2 (Storage): Format Benchmark
+Make sure you calculate statistics in a thread-safe way.  There are a couple approaches you could consider:
+1. adding another lock in client.py, and hold it when a thread updates stats that other threads might update too
+2. compute partial stats/counts for each thread, and wait until after all threads return (using `join`) before adding to get totals
 
-Run a benchmark comparing **load_input I/O time only** across formats.
-This part should measure Stage 1 (reading) only, not request/compute.
+## Part 2: Storage Performance
 
-Benchmark script:
+Is Parquet or zipped CSV faster?  Write a benchmark program that tries
+running your client both ways.  You can read about how to write a
+program that runs other programs here:
+https://docs.python.org/3/library/subprocess.html.
 
-- `benchmarks/format_bench.py`
+Your benchmark should write the measurents to a CSV file.  Another
+program should take this CSV file in, and produce a bar plot in a file
+named `storage.svg`.  You can name the other files (the two programs
+and CSV file) as you like.
 
-Invocation:
+To measure storage performance specifically, run with `--rows=0` so
+that no rows are processed after the load.
 
-```bash
-docker run --rm -v "$(pwd)/outputs:/outputs" p3-nogil-bench python3.13-nogil benchmarks/format_bench.py /outputs
-```
+Your measuremnts may vary, but the plot should look something like this:
 
-Expected outputs:
-
-- `outputs/formats.csv`
-- `outputs/formats.svg`
-
-Required columns in `formats.csv`:
-
-- `mode` (`gil1` / `gil0`)
-- `format` (`csv`, `parquet`, `arrow`)
-- `io_seconds`
-
-benchmark should call `load_input(...)` directly and won't send requests to the server, thus cache size and thread count are not part of this benchmark.
+TODO: plot example.
 
 ## Part 3 (Memory): Cache Analysis
 
