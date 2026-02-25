@@ -23,7 +23,7 @@ Before starting, please review the [general project directions](../projects.md).
 
 ## Corrections/Clarifications
 
-* none yet
+- Updated `autobadger` to `1.2.2` to fix issue that was breaking the Gitlab pipeline for some students.
 
 ## AI Usage
 
@@ -320,4 +320,6 @@ anything you might have changed.
 
 ## Tester
 
-Details coming soon...
+`autobadger --project p2 --verbose`
+
+(Please make sure you are on the latest version **1.2.2** of autobadger).
