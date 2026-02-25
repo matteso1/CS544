@@ -15,8 +15,6 @@ RUN python3.13-nogil -m pip install pandas pyarrow requests matplotlib pytest
 
 WORKDIR /app
 
-# Student code will be copied here
-# COPY app_cli/ ./app_cli/
-# COPY benchmarks/ ./benchmarks/
+COPY app_cli/ ./app_cli/
 
-CMD ["bash"]
+CMD ["sleep", "infinity"]
