@@ -230,8 +230,8 @@ Your measurements may vary, but the plot should look something like this:
 ## Part 3: Memory Performance
 
 How does cache size impact your hit rate?  Write a benchmark program
-that runs your client with cache sizes of 1, 10, 100, 1000, and
-10000.  Use 4 threads and Parquet input for all runs.
+that runs your client with cache sizes of 10k, 20k, 30k, ..., 90k, and
+100k.  Use 4 threads and 1 million rows of Parquet input for all runs.
 
 Your benchmark should write the measurements to a CSV file.  Another
 program should take this CSV file in, and produce a line plot in a
@@ -240,7 +240,7 @@ y-axis should be hit rate.
 
 Your measurements may vary, but the plot should look something like this:
 
-TODO: plot example.
+<img src="memory.svg" width=300>
 
 ## Part 4: Compute Performance
 
