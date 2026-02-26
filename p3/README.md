@@ -100,10 +100,14 @@ responses).
 ### HTTP Cache (cache.py)
 
 Look at `http_get` in cache.py.  The call implements retry, but no
-caching (yet).  The cache.py code can work as a program (for `python3
-cache.py args...`, the `__main__` code will run, or a module (for
-`import cache`, the main won't run, but the importer can use
-`http_get`).
+caching (yet).  The cache.py code can work as a program or a
+module. For `python3 cache.py args...`, the `__main__` code will run.
+For `import cache`, the main won't run, but the importer can use
+`http_get`.
+
+In this case, cache.py will normally be used as a function, but
+running as a program provides a simple demonstration of the cache's
+capabilities.
 
 Add thread-safe caching functionality to `http_get`, and return True for cache
 hits.
@@ -118,11 +122,11 @@ The `__main__` block in `cache.py` lets you test caching directly.  It initializ
 
 ```bash
 docker exec p3-client-1 python3.13-nogil app_cli/cache.py \
-  http://server:8001/55079010900 \
-  http://server:8001/55079002402 \
-  http://server:8001/55079010900 \
-  http://server:8001/55079002402 \
-  http://server:8001/55079010900
+  http://server:8001/55001950100 \
+  http://server:8001/55001950201 \
+  http://server:8001/55001950100 \
+  http://server:8001/55001950201 \
+  http://server:8001/55001950100
 ```
 
 You should see `hits: 3` (the first two are misses, the last three are cache hits).
