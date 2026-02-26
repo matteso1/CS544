@@ -270,7 +270,7 @@ y-axis should be seconds.  Plot one line for each GIL mode.
 
 Your measurements may vary, but the plot should look something like this:
 
-TODO: plot example.
+<img src="compute.svg" width=300>
 
 ## Submission
 
