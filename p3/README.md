@@ -4,16 +4,25 @@
 
 ## Overview
 
-In this project, you will explore concurrent programming, data
-processing, and controlled AI-assisted development through a housing
-affordability pipeline.
+In this project, you will build a small, multi-threaded application
+that uses caching (to avoid network I/O) and loads data from different
+formats.
 
-You will work with:
+Most of this project will focus on writing small benchmarks to
+evaluate the performance of your application under different
+configurations.  For example, you will compare the load time for
+different formats, measure the hitrate as a function of cache size,
+and find the best combination of thread parallelism and GIL usage.
 
-- HMDA loan-level data (client side)
-- ACS tract-level median household income data (server side)
+For part 1, you will implement your application.  For the other parts,
+you will also be producing code, but your main artifact will be a
+PDF-based report.
 
-The client performs multi-threaded processing and uses a thread-safe FIFO cache to reduce repeated server lookups.
+* open this template: https://docs.google.com/document/d/1wpv5mNjvMH14iWGSdibsriqMUPTMfd3smyDzNlQBqLM/edit?usp=sharing
+* copy to a private location on your Google drive
+* for parts 2-4, fill in the relevant sections
+* export to a PDF, named perf.pdf
+* push perf.pdf to repo (top level, not a sub directory)
 
 ## Learning Objectives
 
@@ -263,8 +272,8 @@ TODO: plot example.
 Read the directions [here](../projects.md) about how to create the
 repo.
 
-Fill in the template here: TODO.  Do not change the page count or
-layout.  Save as a pdf (`perf.pdf`), and include it in this repo.
+Remember to submit your perf.pdf, since we will review that manually,
+and it will be worth 60% of your grade!
 
 Please add `.aider.input.history` and `.aider.chat.history.md` to your
 repo.  You must be able to clone your repo to a fresh directory, and
@@ -302,4 +311,4 @@ Your submission repo should contain at least the following:
 
 ## Tester
 
-Details coming soon.  Section 1 will be autograded.  Sections 2-4 will be human reviewed.
+Details coming soon.  Section 1 will be mostly autograded.  Sections 2-4 will be human reviewed.
