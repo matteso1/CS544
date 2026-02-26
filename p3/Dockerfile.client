@@ -8,13 +8,10 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install pip for python3.13-nogil
-RUN python3.13-nogil -m ensurepip && \
-    python3.13-nogil -m pip install --upgrade pip
-
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.13-nogil get-pip.py
 RUN python3.13-nogil -m pip install pandas pyarrow requests matplotlib pytest
-
-WORKDIR /app
 
 COPY app_cli/ ./app_cli/
 
+WORKDIR /app
 CMD ["sleep", "infinity"]

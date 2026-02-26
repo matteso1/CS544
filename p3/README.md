@@ -1,10 +1,12 @@
 # DRAFT!  Don't start yet.
 
-# P3 (3% of grade): Loans and Performance Study
+# P3 (3% of grade): Performance Study
 
 ## Overview
 
-In this project, you will explore concurrent programming, data processing, and controlled AI-assisted development through a housing affordability pipeline.
+In this project, you will explore concurrent programming, data
+processing, and controlled AI-assisted development through a housing
+affordability pipeline.
 
 You will work with:
 
@@ -25,32 +27,21 @@ Before starting, review general project directions from class.
 
 ## Corrections/Clarifications
 
-- Follow course announcements for any updates.
+- none yet
 
 ## AI Usage
 
 You must write `cache.py` by hand, without AI.  For the rest, you may use Aider with gemini-2.5-pro for anything you like.  You must use it for at least one thing of your choice.  You may not use other AI for code generation (only for asking generation questions; for example, to learn about Python data structures you might use).
-
-## Runtime Modes (Experiments)
-
-TODO: move this into part 4
-
-Use only these two modes in experiments:
-
-1. `python3.13-nogil -X gil=1`
-2. `python3.13-nogil -X gil=0`
-
-`python` baseline is removed from the main benchmark workflow.
 
 ## Setup
 
 Copy starter files from the `p3` directory in the main repo to your project repo:
 
 ```
-cp -r app_server Dockerfile.server Dockerfile.client \
+cp -r app_cli app_server Dockerfile.server Dockerfile.client \
   docker-compose.yml port.sh <PROJECT REPO>
 cd <PROJECT REPO>
-git add app_server Dockerfile.server Dockerfile.client docker-compose.yml port.sh
+git add app_cli app_server Dockerfile.server Dockerfile.client docker-compose.yml port.sh
 git commit -m 'starter code'
 ```
 
@@ -62,7 +53,7 @@ wget https://pages.cs.wisc.edu/~harter/cs544/data/2021_public_lar_csv.zip -O dat
 wget https://pages.cs.wisc.edu/~harter/cs544/data/2021_public_lar.parquet -O data/2021_public_lar.parquet
 ```
 
-Do NOT add or commit these large files in your repo.
+Do NOT "git add" or "git commit" these large files in your repo.
 
 Build and start:
 
@@ -74,7 +65,7 @@ docker compose up --build -d -t 0
 Verify the server is working from your VM.  We provide a small script (`port.sh`) for looking up the external port number for one of your containers, because it may change each time.  You can use backticks to run the script to get the port number, then immediately use it in a curl command:
 
 ```bash
-curl localhost:`./port.sh p3-server-1`/55079010900
+curl localhost:`./port.sh p3-server-1`/01001020200
 ```
 
 You should get back a number (the median household income in thousands for that census tract).
@@ -235,9 +226,17 @@ TODO: plot example.
 ## Part 4: Compute Performance
 
 How is performance impacted by the GIL and the number of threads?
+
+The `python3.13-nogil` runtime installed in our containers is an
+experimental free-threaded build of CPython 3.13.  Unlike regular
+CPython, this build lets you control whether the GIL is active at
+launch time.  Use only these two modes in your experiments:
+
+1. `python3.13-nogil -X gil=1` — GIL enabled (threads take turns, similar to regular Python)
+2. `python3.13-nogil -X gil=0` — GIL disabled (threads can truly run in parallel)
+
 Write a benchmark program that runs your client with thread counts of
-1, 2, 4, and 8.  For each thread count, run twice: once with
-`python3.13-nogil -X gil=1` and once with `python3.13-nogil -X gil=0`.
+1, 2, 4, and 8.  For each thread count, run once in each mode.
 Use Parquet input and a cache size of 1000 for all runs.
 
 Your benchmark should write the measurements to a CSV file.  Another
@@ -266,9 +265,28 @@ export PROJECT=p3
 docker compose up --build -d -t 0
 ```
 
-TODO: describe how we will interact with their code
+We will copy in `docker-compose.yml` and `app_server/`, overwriting
+anything you might have changed.  We will then run your client like
+this:
 
-TODO: describe what files we expect, both with specific names, and in general.
+```bash
+docker exec p3-client-1 python3.13-nogil app_cli/client.py /data/2021_public_lar.parquet --rows 50000 --cache 2000 --threads 8
+```
+
+Your submission repo should contain at least the following:
+
+* `app_cli/cache.py` — thread-safe FIFO HTTP cache
+* `app_cli/client.py` — multi-threaded analysis client
+* `app_server/` — server code (unchanged from starter)
+* `Dockerfile.server`, `Dockerfile.client` — container build files
+* `docker-compose.yml` — compose config (unchanged from starter)
+* `port.sh` — port lookup helper (unchanged from starter)
+* `storage.svg` — bar plot from Part 2
+* `memory.svg` — line plot from Part 3
+* `compute.svg` — line plot from Part 4
+* `perf.pdf` — filled-in report template
+* `.aider.input.history`, `.aider.chat.history.md` — AI usage logs
+* benchmark/plotting programs for Parts 2–4 (you may name these as you like)
 
 **Optional:** consider providing feedback on the project to earn extra credit: https://tyler.caraza-harter.com/cs544/s26/forms.html.
 
