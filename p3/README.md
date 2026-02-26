@@ -1,5 +1,3 @@
-# DRAFT!  Don't start yet.
-
 # P3 (3% of grade): Performance Study
 
 ## Overview
@@ -261,7 +259,7 @@ launch time.  Use only these two modes in your experiments:
 
 Write a benchmark program that runs your client with thread counts of
 1, 2, 4, and 8.  For each thread count, run once in each mode.
-Use Parquet input and a cache size of 1000 for all runs.
+Use 1 million rows of Parquet input and a cache size of 50000 for all runs.
 
 Your benchmark should write the measurements to a CSV file.  Another
 program should take this CSV file in, and produce a line plot in a
