@@ -1,0 +1,249 @@
+# P1 (3% of grade): Dockerized Git Analyzer
+
+## Overview
+
+In this project, you'll practice using Docker and shell scripts.  You'll build a dockerized tool that clones a git repo, extracts the difference between two branches, then summarizes the difference with the help of a small LLM (large language model).
+
+Learning objectives:
+* use redirection and piping techniques to send data between files/processes
+* write shell scripts
+* deploy applications as Docker containers
+* interact with a small, locally deployed LLM
+
+Before starting, please review the [general project directions](../projects.md).
+
+## Corrections/Clarifications
+
+* 2026-2-05 — Updated `autobadger` to `1.1.2` for issue called out on Piazza post #57
+* 2026-1-31 — Updated `autobadger` to `1.1.1` for issue called out on Piazza post #43
+* 2026-2-02 — Added alt option for submitting Gemini chat
+* 2026-2-09 — Added CMD hint for part 2
+
+## AI Usage
+
+For this project, you must use Google Gemini (as provided by the University: https://it.wisc.edu/generative-ai-services-uw-madison/) on part 4 to review a poorly written Dockerfile.
+
+For parts 1-3, you are not allowed to use AI to write scripts or Dockerfiles for you, but you may optionally use it to provide feedback on things you have written yourself.  Writing the first version yourself will help you develop your own skill.
+
+## Part 1: Prompt Generation Script
+
+Look at this repo:
+https://git.doit.wisc.edu/cdis/cs/courses/cs544/misc/calculator.
+There are a few branches.  Browse through them.
+
+Write a bash script called `gen_prompt.sh` that clones the repo,
+extracts the difference between two branches, and generates a prompt
+file that could be sent to an LLM.
+
+Your script should:
+1. Clone the calculator repo
+2. Compare the `fix` branch to the `main` branch using `git diff`
+3. Generate a `prompt.txt` file formatted like this:
+
+```
+Read following code diff:
+<git diff output here...>
+Summarize the code changes in 1 sentence, without repeating actual lines of code.
+```
+
+The full prompt should look like this:
+
+```
+Read following code diff:
+diff --git a/calc.py b/calc.py
+index 5a80faf..b14e36d 100644
+--- a/calc.py
++++ b/calc.py
+@@ -2,8 +2,10 @@
+ import sys
+ 
+ def main():
++    USAGE = f"Usage: {sys.argv[0]} <operation> <num1> <num2>\nSupported operations: add, sub, mul, div"
++    
+     if len(sys.argv) != 4:
+-        print(f"Usage: {sys.argv[0]} add <num1> <num2>")
++        print(USAGE)
+         sys.exit(1)
+     
+     operation = sys.argv[1]
+@@ -25,7 +27,7 @@ def main():
+         result = num1 / num2
+     else:
+         print(f"Error: Unknown operation '{operation}'")
+-        print("Supported operations: add, sub, mul, div")
++        print(USAGE)
+         sys.exit(1)
+     
+     # Print integer if result is whole number, otherwise float
+Summarize the code changes in 1 sentence, without repeating actual lines of code.
+```
+
+**Requirements:** Your `gen_prompt.sh` script must:
+* Start with a shebang line (e.g., `#!/bin/bash`)
+* Use `>` (overwrite redirect) for creating/overwriting the file
+* Use `>>` (append redirect) for adding content to the file
+
+## Part 2: Gemma Docker Image
+
+### Docker Install
+
+Carefully follow the directions here to install Docker on your virtual machine: https://git.doit.wisc.edu/cdis/cs/courses/cs544/s26/main/-/blob/main/docker.md?ref_type=heads
+
+Create some files to verify your Docker installation:
+
+```
+docker version > docker.txt
+docker compose version > compose.txt
+```
+
+### llamafile
+
+[llamafile](https://hacks.mozilla.org/2023/11/introducing-llamafile/)
+is a Mozilla project that packages large language model weights into
+standalone executables.
+
+Normally, models run on GPUs.  We will use Gemma 3 with 4 billion
+parameters because it is small enough to run reasonably on a CPU.
+
+Read about the model here: https://huggingface.co/mozilla-ai/gemma-3-4b-it-llamafile
+
+Try the quickstart directions on your VM.  Note that the model is
+about 3 GB, so the download will take a while.
+
+Hint: The quickstart directions suggests running the llamafile with 
+`./google_gemma-3-4b-it-Q6_K.llamafile`. However you can write the container's
+CMD command as `CMD ["sh", "-c", "/google_gemma-3-4b-it-Q6_K.llamafile"]`. This
+replaces the intuitive `CMD ["./google_gemma-3-4b-it-Q6_K.llamafile"]` in order
+to avoid execution issues inside the container.
+
+Now, your job is to write a Dockerfile named `Dockerfile.llm` that can be built like this:
+
+```
+export PROJECT=p1
+docker build . -f Dockerfile.llm -t ${PROJECT}-llm
+```
+
+The `-f` flag tells Docker to use a Dockerfile that is not simply
+named "Dockerfile".  We are using an environment variable for the
+image name because we will test code from multiple students
+concurrently, and we cannot build images for multiple students at the
+same time with the same name (so, during testing, we will use
+something other than "p1").
+
+Your Dockerfile should install Gemma and make it the default start command for new containers.
+
+After building the image, you should be able to run Gemma like this:
+
+```
+docker run -it ${PROJECT}-llm
+```
+
+## Part 3: Analyzer Script
+
+Write an `analyze.sh` bash script that:
+1. Runs `gen_prompt.sh` to generate `prompt.txt`
+2. Feeds the prompt to the LLM to get a summary
+
+Run `./google_gemma-3-4b-it-Q6_K.llamafile --help` to read about
+arguments you can use.  Find the flag that "Uses content of file as
+system prompt" and use that to pass a path to a file generated by gen_prompt.sh.
+
+Gemma requirements:
+* disable logging
+* prompt should be silent (so not printed out again)
+* set temperature to 0 (otherwise LLMs produce somewhat different output each time)
+
+Other requirements:
+* stdout/stderr of gen_prompt.sh should not be part of the output of analyze.sh
+* final output should be wrapped so that it is no more than 80 characters wide (hint: `man fmt`)
+* pipe the Gemma output for the final format processing
+
+## Part 4: Fix the Dockerfile
+
+We already have one Docker image with just Gemma; now we will create a
+second image that builds on the first, adding our scripts and other
+dependencies.
+
+Create a `Dockerfile.analyze` that builds an image combining your
+scripts with the LLM from Part 2.  Start with this bad Dockerfile:
+
+```
+ARG PROJECT=p1
+FROM ${PROJECT}-llm:latest
+
+RUN apt update
+RUN apt install git
+
+COPY gen_prompt.sh .
+COPY analyze.sh .
+
+CMD ["bash", "analyze.sh"]
+```
+
+Try to build it like this (should fail):
+
+```
+export PROJECT=p1
+docker build . -f Dockerfile.analyze -t ${PROJECT}-analyze --build-arg PROJECT=$PROJECT
+```
+
+Note we are again using the `PROJECT` variable which we will change
+when testing multiple student submissions concurrently.
+
+Many people are using AI to produce code faster, but we can also use
+it to produce higher quality code.
+
+As you practice this, take notes in a file called `part4.txt`.
+
+In `part4.txt`, first write down a numbered list of any problems you
+see in the Dockerfile, prior to using AI.
+
+Now let's ask Gemini for suggestions to improve the code.
+* visit https://it.wisc.edu/generative-ai-services-uw-madison/ to see the AI tools you have access to as a UW-Madison student
+* click Google Gemini
+* paste the bad Dockerfile, and ask for suggestions to improve
+* be sure to followup, enquiring about any suggestions you don't understand fully.
+* don't assume suggestions are always correct.  You can ask Gemini to "link to documentation about ????" so you can go read further
+
+Now, read the biggest issues we (teaching team) saw in the Dockerfile: [part4-bugs.md](part4-bugs.md).  If there are any issues Gemini didn't mention, experiment with followup prompts to see if you can get better output.  E.g., you could ask it whether any commands will be problematic given you are not running them interactively (i.e., a human typing them in a terminal).
+
+At the top of the chat, click "Share conversation" to get a link, and
+paste it somewhere in your `part4.txt` file.
+
+**Note:** it seems sharing is disabled if you're signed into Gemini with your wisc.edu.  You can do the above with a personal Gemini account.  Or, in Chrome, select all the text of the chat (your prompts and the responses), right click, and select "Print".  Under "More settings" turn on "Background graphics" and Selection only", and save to a PDF, chat.pdf.  Use `scp` to copy this to your VM, and commit it to your repo.
+
+Also, comment in the file regarding whether Gemini was able to find the three issues we described.
+
+Finally, think critically and decide what feedback you want to
+integrate into your Dockerfile.  Do NOT integrate any suggestion you
+do not fully understand.
+
+Once you have finalized your Dockerfile and rebuilt, make sure you can run the container to analyze the code changes:
+
+```
+docker run ${PROJECT}-analyze
+```
+
+The output should look something like this:
+
+```
+The code was updated to include a usage message that explains how to run
+the script and lists the supported operations.
+```
+
+## Submission
+
+Read the directions [here](../projects.md) about how to create the repo.
+
+Your submission repo should contain the following files:
+* `docker.txt` - Docker version output
+* `compose.txt` - Docker Compose version output
+* `gen_prompt.sh` - Script that generates prompt.txt from git diff
+* `analyze.sh` - Script that generates prompt and runs the LLM
+* `Dockerfile.llm` - Base image with llamafile and Gemma model
+* `Dockerfile.analyze` - Fixed analyze image that builds on llama image
+* `part4.txt` - File describing code review with Gemini
+
+## Tester
+
+`autobadger --project p1 --verbose`

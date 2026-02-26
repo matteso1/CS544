@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+// PART 1: protobufs
+
+message MultReq {
+        int32 x = 1;
+        int32 y = 2;
+}
+
+message MultResp {
+        int32 result = 1;
+}
+
+// PART 2: services and their methods
+service Calc {
+        rpc Mult(MultReq) returns (MultResp);
+}

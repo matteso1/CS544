@@ -1,0 +1,91 @@
+Version A
+
+1. B
+2. B
+3. C
+4. D
+5. A
+6. D
+7. D
+8. B
+9. rmi
+10. services | RPCs | methods | functions
+11. ls
+12. 32
+13. (N)AT | (N)etwork Address Translation | (N)AT Router
+14. sudo
+15. tcp | udp
+16. wc
+17.1. A points to B (a process), which points to terminal output
+17.2. C (a process) points to E (a file)
+17.3. D (a process) points to E (a file)
+17.4. file contains "C" and "D"
+
+Version B
+
+1. B
+2. A
+3. C
+4. B
+5. A
+6. D
+7. D
+8. B
+9. 32
+10. rmi
+11. tcp | udp
+12. ls
+13. wc
+14. services | RPCs | methods | functions
+15. (N)AT | (N)etwork Address Translation | (N)AT Router
+16. sudo
+17.1. A points to B (a process), which points to terminal output
+17.2. C (a process) points to E (a file)
+17.3. D (a process) points to E (a file)
+17.4. file contains "C" and "D"
+
+Version C
+
+1. A
+2. A
+3. C
+4. C
+5. B
+6. B
+7. C
+8. C
+9. ps
+10. protobuf | protocol buffers
+11. (N)AT | (N)etwork Address Translation | (N)AT Router
+12. chmod
+13. wget
+14. messages
+15. 127.0.0.1
+16. pwd
+17.1. A (a process) points to B (a file)
+17.2. C (a process) points to B (a file)
+17.3. D points to E (a process), which points to terminal output
+17.4. file B contains "C"
+
+Version D
+
+1. A
+2. A
+3. C
+4. C
+5. B
+6. B
+7. C
+8. C
+9. wget
+10. messages
+11. protobuf | protocol buffers
+12. 127.0.0.1
+13. (N)AT | (N)etwork Address Translation | (N)AT Router
+14. ps
+15. chmod
+16. pwd
+17.1. A (a process) points to B (a file)
+17.2. C (a process) points to B (a file)
+17.3. D points to E (a process), which points to terminal output
+17.4. file B contains "C"
