@@ -99,18 +99,20 @@ responses).
 
 ### HTTP Cache (cache.py)
 
-Look at `http_get` in cache.py.  The call implements retry, but no
-caching (yet).  The cache.py code can work as a program or a
-module. For `python3 cache.py args...`, the `__main__` code will run.
-For `import cache`, the main won't run, but the importer can use
-`http_get`.
+Look at `http_get` in cache.py.  The call takes a URL and an
+`http_session` (a `requests.Session` object) and implements retry, but
+no caching (yet).  The caller is responsible for creating the session.
+`requests.Session` is not thread safe, so each thread should create
+its own.  Using a session (rather than bare `requests.get`) enables
+HTTP connection reuse, which is much faster.
 
-In this case, cache.py will normally be used as a function, but
-running as a program provides a simple demonstration of the cache's
-capabilities.
+The cache.py code can work as a program or a module. For `python3
+cache.py args...`, the `__main__` code will run.  For `import cache`,
+the main won't run, but the importer can use `http_get`.
 
 Add thread-safe caching functionality to `http_get`, and return True for cache
-hits.
+hits.  For 404 responses, cache `None` as the content (do not raise an exception).
+For other error status codes, raise with `raise_for_status()`.
 
 Requirements:
 * one global lock, and use it whenever shared data structures are accessed
@@ -118,10 +120,10 @@ Requirements:
 * implement a FIFO policy
 * choose data structures so that eviction is an O(1) operation.  You'll need to do some reading and investigation to find good built-in data types.  Note that popping index 0 from a list (as in lecture) is an O(N) operation
 
-The `__main__` block in `cache.py` lets you test caching directly.  It initializes a cache of size 3 and fetches each URL given as an argument, printing the total hit count at the end.  Try it with `docker compose exec` (make sure compose is up first):
+The `__main__` block in `cache.py` lets you test caching directly.  It initializes a cache of size 3 and fetches each URL given as an argument, printing the total hit count at the end.  Try it with `docker exec` (make sure compose is up first):
 
 ```bash
-docker exec p3-client-1 python3.13-nogil app_cli/cache.py \
+docker exec p3-client-1 python3.13-nogil cache.py \
   http://server:8001/55001950100 \
   http://server:8001/55001950201 \
   http://server:8001/55001950100 \
@@ -138,20 +140,24 @@ Try testing your eviction policy too.  With a cache of size 3, try passing 4 dif
 Write a client.py program that works like this:
 
 ```bash
-docker exec p3-client-1 python3.13-nogil app_cli/client.py /data/2021_public_lar_csv.zip --rows 50000 --cache 2000 --threads 8
+docker exec p3-client-1 python3.13-nogil client.py /data/2021_public_lar_csv.zip --rows 50000 --cache 2000 --threads 8
 ```
 
-It should open the data file, supporting zipped CSV and Parquet (infer which to do based on file extension).  Read all values from these columns to Python lists:
+It should open the data file, supporting zipped CSV and Parquet (infer which to do based on file extension).  Use `pyarrow` (not `pandas`) to read only these three columns into an Arrow table:
 
 - `state_code`
 - `census_tract`
 - `income`
 
-After making the complete list, slice these to the first `rows` entries, based on the cmd line argument.  If `--rows=-1`, do not slice.
+For Parquet, use `pyarrow.parquet.read_table` with its `columns` parameter (as shown in class).  For CSV, use `pyarrow.csv.read_csv` with a [ConvertOptions](https://arrow.apache.org/docs/python/generated/pyarrow.csv.ConvertOptions.html) to select columns.
+
+**Memory tip:** By default, pyarrow infers the schema (column types) for all columns in the CSV, which requires substantial memory for wide files like this one (99 columns, 26M rows).  Run `docker stats` in another terminal to monitor memory usage.  If your container is getting killed (exit code 137), read about how to explicitly specify column types in `ConvertOptions` to avoid the inference overhead.
+
+After reading, slice the table to the first `rows` entries using Arrow's `.slice(0, rows)`.  If `--rows=-1`, do not slice.  Keep the data as an Arrow table (do not convert to Python lists) -- this is important for memory efficiency given the 26M+ rows.
 
 Import the cache you wrote and initialize to the given size.
 
-Start the specified number of threads to perform the analysis.  Each should be passed a start and stop index.  Each thread will loop over the indicated range of the Python lists you loaded.  The ranges should be roughly even in size.  For example, say there are a million rows, but you load like this: `--rows 9 --cache 2000 --threads 3`.  The ranges might be like this (inclusive start, exclusive end):
+Start the specified number of threads to perform the analysis.  Each should be passed a start and stop index.  Each thread will loop over the indicated range of the table.  You can index individual values from an Arrow column like `table.column("col_name")[i].as_py()`.  The ranges should be roughly even in size.  For example, say there are a million rows, but you load like this: `--rows 9 --cache 2000 --threads 3`.  The ranges might be like this (inclusive start, exclusive end):
 
 * thread 0: indexes 0-3
 * thread 1: indexes 3-6
@@ -163,7 +169,7 @@ The client should skip bad rows safely (with `continue`) instead of crashing.  B
 
 - invalid or missing `census_tract`
 - invalid, missing, or non-positive `income`
-- rows where server lookup returns `404` (tract not found in server dataset)
+- rows where server lookup returns `404` (the cache will return None)
 
 After the threads exit, you will need to output the hit rate and a percentage per state (what percent of incomes for loan applicants are < the median for the corresponding state).
 
@@ -184,8 +190,8 @@ The output format will be like this (round down percents with `int(...)`):
 
 ```
 ...other output you may want...
-IL: 25
-WI: 50
+IL: 25% of 4
+WI: 50% of 2
 hit rate: 50%
 ```
 
@@ -195,10 +201,10 @@ Make sure you calculate statistics in a thread-safe way.  There are a couple app
 
 ## Part 2: Storage Performance
 
-Is Parquet or zipped CSV faster?  Write a benchmark program that tries
-running your client both ways.  You can read about how to write a
-program that runs other programs here:
-https://docs.python.org/3/library/subprocess.html.
+Is Parquet or zipped CSV faster?  Write a benchmark program that uses
+[subprocess](https://docs.python.org/3/library/subprocess.html) to run
+your client both ways, timing each run (the benchmark program should
+do the timing, not the client).
 
 Your benchmark should write the measurements to a CSV file.  Another
 program should take this CSV file in, and produce a bar plot in a file
@@ -274,14 +280,14 @@ anything you might have changed.  We will then run your client like
 this:
 
 ```bash
-docker exec p3-client-1 python3.13-nogil app_cli/client.py /data/2021_public_lar.parquet --rows 50000 --cache 2000 --threads 8
+docker exec p3-client-1 python3.13-nogil client.py /data/2021_public_lar.parquet --rows 50000 --cache 2000 --threads 8
 ```
 
 Your submission repo should contain at least the following:
 
-* `app_cli/cache.py` — thread-safe FIFO HTTP cache
+* `app_cli/cache.py` — thread-safe FIFO HTTP cache (these get copied into the container at build time)
 * `app_cli/client.py` — multi-threaded analysis client
-* `app_server/` — server code (unchanged from starter)
+* `app_server/server.py` — server code (unchanged from starter)
 * `Dockerfile.server`, `Dockerfile.client` — container build files
 * `docker-compose.yml` — compose config (unchanged from starter)
 * `port.sh` — port lookup helper (unchanged from starter)
