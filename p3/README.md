@@ -40,7 +40,7 @@ Before starting, review general project directions from class.
 
 ## AI Usage
 
-You must write `cache.py` by hand, without AI.  For the rest, you may use Aider with gemini-2.5-pro for anything you like.  You must use it for at least one thing of your choice.  You may not use other AI for code generation (only for asking generation questions; for example, to learn about Python data structures you might use).
+You must write `cache.py` by hand, without AI.  For the rest, you may use Aider with gemini-2.5-pro for anything you like.  You must use it for at least one thing of your choice.  You may not use other AI for code generation (only for asking general questions; for example, to learn about Python data structures you might use).
 
 ## Setup
 
@@ -81,18 +81,18 @@ You should get back a number (the median household income in thousands for that 
 
 ## Part 1: Income Analysis
 
-The HDMA data contains US-wide loan applications for 2021.  Loan
+The HMDA data contains US-wide loan applications for 2021.  Loan
 applications are associated with census tracts.  The American
-Community Survey (ACS) provides data about average income per census
+Community Survey (ACS) provides data about median income per census
 tract.
 
 You will write a program to study housing affordability, and answer this question:
 
 **For each state, what percent of loan applicants have below-median income for the corresponding census tract area?**
 
-You will write a client program that loops over the HDMA data
+You will write a client program that loops over the HMDA data
 directly.  But instead of accessing ACS data directly, the client will
-send requests to a server to lookup average income.  
+send requests to a server to lookup median income.  
 
 The server exposes tract-income lookup as REST:
 
@@ -180,9 +180,9 @@ The client should skip bad rows safely (with `continue`) instead of crashing.  B
 - invalid, missing, or non-positive `income`
 - rows where server lookup returns `404` (the cache will return None)
 
-After the threads exit, you will need to output the hit rate and a percentage per state (what percent of incomes for loan applicants are < the median for the corresponding state).
+After the threads exit, you will need to output the hit rate and a percentage per state (what percent of incomes for loan applicants are < the median for their census tract).
 
-For example, imagine 6 rows across 2 states and 3 tracts.  Suppose the server returns median incomes of 50 for tract A, 60 for tract B, and 40 for tract C.
+For example, imagine 6 rows across 2 states and 3 tracts.  Suppose the server returns median incomes of 60 for tract A, 70 for tract B, and 40 for tract C.
 
 | row | state     | tract       | income | tractmedian |
 |-----|-----------|-------------|--------|-------------|
@@ -311,4 +311,4 @@ Your submission repo should contain at least the following:
 
 ## Tester
 
-Details coming soon.  Section 1 will be mostly autograded.  Sections 2-4 will be human reviewed.
+Details coming soon.  Part 1 will be mostly autograded.  Parts 2-4 will be human reviewed.
