@@ -225,7 +225,7 @@ that no rows are processed after the load.
 
 Your measurements may vary, but the plot should look something like this:
 
-TODO: plot example.
+<img src="storage.svg" width=300>
 
 ## Part 3: Memory Performance
 
