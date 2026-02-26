@@ -220,6 +220,11 @@ program should take this CSV file in, and produce a bar plot in a file
 named `storage.svg`.  You can name the other files (the two programs
 and CSV file) as you like.
 
+In order to get the CSV and SVG out of your container, you may wish to
+run your benchmarking and plotting tools outside of Docker.  In this
+case, your benchmark might be using `subprocess` to run a `docker exec
+...` command.
+
 To measure storage performance specifically, run with `--rows=0` so
 that no rows are processed after the load.
 
